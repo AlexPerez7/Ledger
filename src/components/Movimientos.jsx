@@ -89,6 +89,7 @@ export function Movimientos({
 function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
   const [editing, setEditing] = useState(false);
   const cat = getCat(t.category);
+  const CatIcon = cat.icon;
 
   return (
     <div style={{ borderBottom: isLast ? "none" : `1px solid ${TOKENS.border}` }}>
@@ -106,8 +107,14 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           </span>
           {t.source === "manual" && t.reconciled && <Check size={11} color={TOKENS.income} style={{ marginLeft: 5, verticalAlign: "-1px" }} />}
         </div>
-        <div style={{ fontSize: 11.5, color: cat.color, display: "flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 7, height: 7, borderRadius: 2, background: cat.color, display: "inline-block" }} /> {cat.label}
+        <div style={{ fontSize: 11.5, color: cat.color, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+          <span style={{
+            width: 20, height: 20, borderRadius: 6, background: `${cat.color}22`, display: "flex",
+            alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            <CatIcon size={12} color={cat.color} />
+          </span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.label}</span>
         </div>
         <div className="mono" style={{ fontSize: 13, textAlign: "right", fontWeight: 500, color: t.amount >= 0 ? TOKENS.income : TOKENS.expense }}>
           {formatCLP(t.amount)}

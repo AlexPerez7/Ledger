@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 
-import { TOKENS, DEFAULT_CATEGORIES, PALETTE } from "./lib/constants.js";
+import { TOKENS, DEFAULT_CATEGORIES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "./lib/constants.js";
 import { storage } from "./lib/storage.js";
 import {
   autoCategory, applyMerchantRules, parseClpNumber, parseBankDate,
@@ -27,8 +27,11 @@ export default function App() {
   const [showManualForm, setShowManualForm] = useState(false);
   const [showCatManager, setShowCatManager] = useState(false);
 
-  const catMap = useMemo(() => Object.fromEntries(categories.map((c) => [c.id, c])), [categories]);
-  const getCat = useCallback((id) => catMap[id] || { id, label: id, color: TOKENS.textFaint }, [catMap]);
+  const catMap = useMemo(
+    () => Object.fromEntries(categories.map((c) => [c.id, { ...c, icon: resolveCategoryIcon(c) }])),
+    [categories]
+  );
+  const getCat = useCallback((id) => catMap[id] || { id, label: id, color: TOKENS.textFaint, icon: DEFAULT_CATEGORY_ICON }, [catMap]);
 
   // ---- persistence (localStorage) -----------------------------------------
   useEffect(() => {
@@ -166,11 +169,12 @@ export default function App() {
     (label) => {
       const id = "cat_" + uid();
       const color = PALETTE[categories.length % PALETTE.length];
-      persistCats([...categories, { id, label, color }]);
+      persistCats([...categories, { id, label, color, icon: "Shapes" }]);
     },
     [categories, persistCats]
   );
   const renameCategory = useCallback((id, label) => { persistCats(categories.map((c) => (c.id === id ? { ...c, label } : c))); }, [categories, persistCats]);
+  const changeCategoryIcon = useCallback((id, icon) => { persistCats(categories.map((c) => (c.id === id ? { ...c, icon } : c))); }, [categories, persistCats]);
   const deleteCategory = useCallback(
     (id) => {
       persistCats(categories.filter((c) => c.id !== id));
@@ -238,7 +242,7 @@ export default function App() {
     const map = {};
     monthTx.filter((t) => t.amount < 0).forEach((t) => { map[t.category] = (map[t.category] || 0) + Math.abs(t.amount); });
     return Object.entries(map)
-      .map(([id, value]) => ({ id, name: getCat(id).label, value, color: getCat(id).color }))
+      .map(([id, value]) => ({ id, name: getCat(id).label, value, color: getCat(id).color, icon: getCat(id).icon }))
       .sort((a, b) => b.value - a.value);
   }, [monthTx, getCat]);
 
@@ -285,7 +289,7 @@ export default function App() {
         <MonthBar months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter} />
 
         {showCatManager && (
-          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onClose={() => setShowCatManager(false)} />
+          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onClose={() => setShowCatManager(false)} />
         )}
 
         {tab === "resumen" && <Resumen stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth} />}

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Trash2, X } from "lucide-react";
-import { TOKENS } from "../lib/constants.js";
+import { TOKENS, ICONS, ICON_NAMES, resolveCategoryIcon } from "../lib/constants.js";
 
-export function CategoryManager({ categories, onAdd, onRename, onDelete, onClose }) {
+export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onClose }) {
   const [newLabel, setNewLabel] = useState("");
+  const [pickerFor, setPickerFor] = useState(null);
+
   return (
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
@@ -11,19 +13,60 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onClose
         <button onClick={onClose} style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
-        {categories.map((c) => (
-          <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: c.color, flexShrink: 0 }} />
-            <input
-              defaultValue={c.label}
-              onBlur={(e) => { if (e.target.value.trim() && e.target.value !== c.label) onRename(c.id, e.target.value.trim()); }}
-              style={{ flex: 1, padding: "6px 9px", borderRadius: 6, border: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, color: TOKENS.text, fontSize: 12.5 }}
-            />
-            <button onClick={() => onDelete(c.id)} style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }} title="Eliminar (los movimientos pasan a Otros)">
-              <Trash2 size={13} />
-            </button>
-          </div>
-        ))}
+        {categories.map((c) => {
+          const CatIcon = resolveCategoryIcon(c);
+          const pickerOpen = pickerFor === c.id;
+          return (
+            <div key={c.id}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  onClick={() => setPickerFor(pickerOpen ? null : c.id)}
+                  title="Cambiar ícono"
+                  style={{
+                    width: 22, height: 22, borderRadius: 6, background: `${c.color}22`, display: "flex",
+                    alignItems: "center", justifyContent: "center", flexShrink: 0, border: pickerOpen ? `1px solid ${c.color}` : "1px solid transparent",
+                    cursor: "pointer", padding: 0,
+                  }}
+                >
+                  <CatIcon size={13} color={c.color} />
+                </button>
+                <input
+                  defaultValue={c.label}
+                  onBlur={(e) => { if (e.target.value.trim() && e.target.value !== c.label) onRename(c.id, e.target.value.trim()); }}
+                  style={{ flex: 1, padding: "6px 9px", borderRadius: 6, border: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, color: TOKENS.text, fontSize: 12.5 }}
+                />
+                <button onClick={() => onDelete(c.id)} style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }} title="Eliminar (los movimientos pasan a Otros)">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+              {pickerOpen && (
+                <div style={{
+                  display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, padding: 10,
+                  background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8,
+                }}>
+                  {ICON_NAMES.map((name) => {
+                    const OptionIcon = ICONS[name];
+                    const selected = (c.icon || "Shapes") === name;
+                    return (
+                      <button
+                        key={name}
+                        title={name}
+                        onClick={() => { onIconChange(c.id, name); setPickerFor(null); }}
+                        style={{
+                          width: 26, height: 26, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
+                          background: selected ? `${c.color}33` : "transparent",
+                          border: `1px solid ${selected ? c.color : TOKENS.border}`, cursor: "pointer", padding: 0,
+                        }}
+                      >
+                        <OptionIcon size={13} color={selected ? c.color : TOKENS.textMuted} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <input

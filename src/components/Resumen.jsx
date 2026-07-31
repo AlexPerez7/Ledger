@@ -42,14 +42,23 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth }) {
                 </PieChart>
               </ResponsiveContainer>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
-                {byCategory.slice(0, 6).map((c) => (
-                  <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 2, background: c.color, display: "inline-block" }} /> {c.name}
+                {byCategory.slice(0, 6).map((c) => {
+                  const CatIcon = c.icon;
+                  return (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted }}>
+                        <span style={{
+                          width: 18, height: 18, borderRadius: 5, background: `${c.color}22`, display: "flex",
+                          alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          <CatIcon size={11} color={c.color} />
+                        </span>
+                        {c.name}
+                      </div>
+                      <span className="mono" style={{ color: TOKENS.text }}>{formatCLP(c.value)}</span>
                     </div>
-                    <span className="mono" style={{ color: TOKENS.text }}>{formatCLP(c.value)}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
