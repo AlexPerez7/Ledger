@@ -1,0 +1,76 @@
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
+  CartesianGrid, Legend,
+} from "recharts";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TOKENS } from "../lib/constants.js";
+import { formatCLP, formatDateDisplay } from "../lib/utils.js";
+import { Panel, EmptyNote, StatCard } from "./Shared.jsx";
+
+const MONTH_NAMES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function fmtMonth(m) {
+  if (!m) return "";
+  const [y, mo] = m.split("-");
+  return `${MONTH_NAMES[parseInt(mo, 10) - 1]} ${y}`;
+}
+
+export function Resumen({ stats, byCategory, byMonth, currentMonth }) {
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
+        <StatCard
+          label="Saldo (último dato del banco)"
+          value={stats.lastKnown ? formatCLP(stats.lastKnown.amount) : "—"}
+          sub={stats.lastKnown ? `al ${formatDateDisplay(stats.lastKnown.date)}` : "importa un movimiento del banco"}
+          accent={TOKENS.accent}
+        />
+        <StatCard label="Ingresos" value={formatCLP(stats.income)} icon={ArrowUpRight} accent={TOKENS.income} />
+        <StatCard label="Gastos" value={formatCLP(stats.expense)} icon={ArrowDownRight} accent={TOKENS.expense} />
+        <StatCard label="Balance del período" value={formatCLP(stats.balance)} accent={stats.balance >= 0 ? TOKENS.income : TOKENS.expense} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Panel title={`Gasto por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
+          {byCategory.length === 0 ? <EmptyNote text="Sin gastos registrados en este período." /> : (
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <ResponsiveContainer width="55%" height={220}>
+                <PieChart>
+                  <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}>
+                    {byCategory.map((entry) => <Cell key={entry.id} fill={entry.color} stroke={TOKENS.surface} strokeWidth={2} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => formatCLP(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
+                {byCategory.slice(0, 6).map((c) => (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted }}>
+                      <span style={{ width: 8, height: 8, borderRadius: 2, background: c.color, display: "inline-block" }} /> {c.name}
+                    </div>
+                    <span className="mono" style={{ color: TOKENS.text }}>{formatCLP(c.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Últimos 6 meses">
+          {byMonth.length === 0 ? <EmptyNote text="Importa movimientos para ver la evolución." /> : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={byMonth}>
+                <CartesianGrid strokeDasharray="3 3" stroke={TOKENS.border} vertical={false} />
+                <XAxis dataKey="month" tickFormatter={fmtMonth} stroke={TOKENS.textFaint} fontSize={11} />
+                <YAxis stroke={TOKENS.textFaint} fontSize={11} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                <Tooltip contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }} labelFormatter={fmtMonth} formatter={(v) => formatCLP(v)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="ingresos" fill={TOKENS.income} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="gastos" fill={TOKENS.expense} radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Panel>
+      </div>
+    </div>
+  );
+}
