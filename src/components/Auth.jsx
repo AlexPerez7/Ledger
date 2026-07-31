@@ -1,0 +1,90 @@
+import { useState } from "react";
+import { TOKENS } from "../lib/constants.js";
+import { FieldInput } from "./Shared.jsx";
+import { supabase } from "../lib/supabaseClient.js";
+
+export function Auth() {
+  const [mode, setMode] = useState("signin"); // "signin" | "signup"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [info, setInfo] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+        if (signUpError) throw signUpError;
+        if (!data.session) {
+          setInfo("Cuenta creada. Revisa tu correo y confirma tu email antes de iniciar sesión.");
+          setMode("signin");
+          setPassword("");
+        }
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
+      }
+    } catch (err) {
+      setError(translateAuthError(err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ background: TOKENS.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 28, width: "100%", maxWidth: 360 }}
+      >
+        <div className="display" style={{ fontSize: 17, fontWeight: 600, color: TOKENS.text, marginBottom: 4 }}>
+          {mode === "signin" ? "Iniciar sesión" : "Crear cuenta"}
+        </div>
+        <div style={{ fontSize: 12.5, color: TOKENS.textMuted, marginBottom: 20 }}>
+          Tus movimientos y categorías, sincronizados entre tus dispositivos.
+        </div>
+
+        <FieldInput label="Email" type="email" value={email} onChange={setEmail} required autoComplete="email" style={{ marginBottom: 12 }} />
+        <FieldInput label="Contraseña" type="password" value={password} onChange={setPassword} required minLength={6}
+          autoComplete={mode === "signin" ? "current-password" : "new-password"} style={{ marginBottom: 16 }} />
+
+        {error && <div style={{ fontSize: 12.5, color: TOKENS.expense, marginBottom: 14 }}>{error}</div>}
+        {info && <div style={{ fontSize: 12.5, color: TOKENS.income, marginBottom: 14 }}>{info}</div>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%", padding: "10px 0", borderRadius: 8, border: "none",
+            background: TOKENS.accent, color: "#0E141B", fontSize: 13.5, fontWeight: 600,
+            cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1,
+          }}
+        >
+          {loading ? "Un momento…" : mode === "signin" ? "Entrar" : "Crear cuenta"}
+        </button>
+
+        <div style={{ marginTop: 16, textAlign: "center", fontSize: 12.5, color: TOKENS.textMuted }}>
+          {mode === "signin" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+          <span
+            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); setInfo(null); }}
+            style={{ color: TOKENS.accent, cursor: "pointer" }}
+          >
+            {mode === "signin" ? "Crear una" : "Inicia sesión"}
+          </span>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function translateAuthError(message) {
+  if (/invalid login credentials/i.test(message)) return "Email o contraseña incorrectos.";
+  if (/email not confirmed/i.test(message)) return "Todavía no confirmaste tu email. Revisa tu bandeja de entrada.";
+  if (/user already registered/i.test(message)) return "Ya existe una cuenta con ese email.";
+  return message;
+}

@@ -14,11 +14,12 @@ import { Resumen } from "./components/Resumen.jsx";
 import { Movimientos } from "./components/Movimientos.jsx";
 import { Conciliacion } from "./components/Conciliacion.jsx";
 
-export default function App() {
+export default function App({ onSignOut }) {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [merchantRules, setMerchantRules] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [syncError, setSyncError] = useState(null);
   const [tab, setTab] = useState("resumen");
   const [monthFilter, setMonthFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -33,7 +34,7 @@ export default function App() {
   );
   const getCat = useCallback((id) => catMap[id] || { id, label: id, color: TOKENS.textFaint, icon: DEFAULT_CATEGORY_ICON }, [catMap]);
 
-  // ---- persistence (localStorage) -----------------------------------------
+  // ---- persistence (Supabase, vía src/lib/storage.js) ----------------------
   useEffect(() => {
     (async () => {
       const tx = await storage.get("transactions");
@@ -42,13 +43,28 @@ export default function App() {
       if (cats) setCategories(JSON.parse(cats.value));
       const rules = await storage.get("merchantRules");
       if (rules) setMerchantRules(JSON.parse(rules.value));
+      if (!tx || !cats || !rules) {
+        setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
+      }
       setLoaded(true);
     })();
   }, []);
 
-  const persistTx = useCallback(async (next) => { setTransactions(next); await storage.set("transactions", JSON.stringify(next)); }, []);
-  const persistCats = useCallback(async (next) => { setCategories(next); await storage.set("categories", JSON.stringify(next)); }, []);
-  const persistRules = useCallback(async (next) => { setMerchantRules(next); await storage.set("merchantRules", JSON.stringify(next)); }, []);
+  const persistTx = useCallback(async (next) => {
+    setTransactions(next);
+    const res = await storage.set("transactions", JSON.stringify(next));
+    setSyncError(res ? null : "No se pudo guardar en el servidor. Revisa tu conexión — si recargas ahora podrías perder este cambio.");
+  }, []);
+  const persistCats = useCallback(async (next) => {
+    setCategories(next);
+    const res = await storage.set("categories", JSON.stringify(next));
+    setSyncError(res ? null : "No se pudo guardar en el servidor. Revisa tu conexión — si recargas ahora podrías perder este cambio.");
+  }, []);
+  const persistRules = useCallback(async (next) => {
+    setMerchantRules(next);
+    const res = await storage.set("merchantRules", JSON.stringify(next));
+    setSyncError(res ? null : "No se pudo guardar en el servidor. Revisa tu conexión — si recargas ahora podrías perder este cambio.");
+  }, []);
 
   // ---- import xls -----------------------------------------------------------
   const handleFile = useCallback(
@@ -283,9 +299,21 @@ export default function App() {
 
   return (
     <div style={{ background: TOKENS.bg, minHeight: "100vh", color: TOKENS.text, fontFamily: "'Inter', sans-serif" }}>
-      <Header tab={tab} setTab={setTab} onManageCats={() => setShowCatManager(true)} />
+      <Header tab={tab} setTab={setTab} onManageCats={() => setShowCatManager(true)} onSignOut={onSignOut} />
 
       <main style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 80px" }}>
+        {syncError && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            background: "rgba(232,101,79,0.12)", border: `1px solid ${TOKENS.expense}`, color: TOKENS.expense,
+            borderRadius: 10, padding: "10px 14px", fontSize: 12.5, marginBottom: 18,
+          }}>
+            <span>{syncError}</span>
+            <button onClick={() => setSyncError(null)} style={{ background: "transparent", border: "none", color: TOKENS.expense, cursor: "pointer", fontSize: 12.5 }}>
+              Cerrar
+            </button>
+          </div>
+        )}
         <MonthBar months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter} />
 
         {showCatManager && (

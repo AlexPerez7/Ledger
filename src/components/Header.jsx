@@ -1,8 +1,8 @@
-import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine } from "lucide-react";
+import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
 
-export function Header({ tab, setTab, onManageCats }) {
+export function Header({ tab, setTab, onManageCats, onSignOut }) {
   const items = [
     { id: "resumen", label: "Resumen", icon: LayoutGrid },
     { id: "movimientos", label: "Movimientos", icon: ListChecks },
@@ -40,6 +40,14 @@ export function Header({ tab, setTab, onManageCats }) {
               );
             })}
           </nav>
+          {onSignOut && (
+            <button onClick={onSignOut} title="Cerrar sesión" style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
+              border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
+            }}>
+              <LogOut size={13} />
+            </button>
+          )}
         </div>
       </div>
     </div>
