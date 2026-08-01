@@ -16,9 +16,9 @@ export function Header({ tab, setTab, onManageCats, onSignOut }) {
             <Wallet size={16} color={TOKENS.bg} />
           </div>
           <div className="display" style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}>Ledger</div>
-          <div style={{ color: TOKENS.textFaint, fontSize: 12, marginLeft: 2 }}>· cuenta corriente CLP</div>
+          <div className="header-subtitle" style={{ color: TOKENS.textFaint, fontSize: 12, marginLeft: 2 }}>· cuenta corriente CLP</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="header-controls" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={onManageCats} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
             border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
@@ -35,7 +35,7 @@ export function Header({ tab, setTab, onManageCats, onSignOut }) {
                   border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
                   background: active ? TOKENS.bg : "transparent", color: active ? TOKENS.text : TOKENS.textMuted,
                 }}>
-                  <Icon size={14} /> {it.label}
+                  <Icon size={14} /> <span className="nav-label">{it.label}</span>
                 </button>
               );
             })}

@@ -12,7 +12,7 @@ export function Movimientos({
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+      <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
         <label
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -93,9 +93,9 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
 
   return (
     <div style={{ borderBottom: isLast ? "none" : `1px solid ${TOKENS.border}` }}>
-      <div style={{ display: "grid", gridTemplateColumns: "84px 1fr 170px 130px 30px 26px", alignItems: "center", gap: 10, padding: "11px 16px" }}>
-        <div className="mono" style={{ fontSize: 11.5, color: TOKENS.textFaint }}>{formatDateDisplay(t.date)}</div>
-        <div style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div className="txrow-grid" style={{ display: "grid", gridTemplateColumns: "84px 1fr 170px 130px auto", alignItems: "center", gap: 10, padding: "11px 16px" }}>
+        <div className="tx-date mono" style={{ fontSize: 11.5, color: TOKENS.textFaint }}>{formatDateDisplay(t.date)}</div>
+        <div className="tx-desc" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {t.alias ? (
             <>
               <span style={{ fontWeight: 500 }}>{t.alias}</span>
@@ -107,7 +107,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           </span>
           {t.source === "manual" && t.reconciled && <Check size={11} color={TOKENS.income} style={{ marginLeft: 5, verticalAlign: "-1px" }} />}
         </div>
-        <div style={{ fontSize: 11.5, color: cat.color, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+        <div className="tx-cat" style={{ fontSize: 11.5, color: cat.color, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
           <span style={{
             width: 20, height: 20, borderRadius: 6, background: `${cat.color}22`, display: "flex",
             alignItems: "center", justifyContent: "center", flexShrink: 0,
@@ -116,15 +116,17 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           </span>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.label}</span>
         </div>
-        <div className="mono" style={{ fontSize: 13, textAlign: "right", fontWeight: 500, color: t.amount >= 0 ? TOKENS.income : TOKENS.expense }}>
+        <div className="tx-amount mono" style={{ fontSize: 13, textAlign: "right", fontWeight: 500, color: t.amount >= 0 ? TOKENS.income : TOKENS.expense }}>
           {formatCLP(t.amount)}
         </div>
-        <button onClick={() => setEditing((v) => !v)} style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 4 }}>
-          <Pencil size={13} />
-        </button>
-        <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: TOKENS.textFaint, padding: 4 }}>
-          <Trash2 size={13} />
-        </button>
+        <div className="tx-actions" style={{ display: "flex" }}>
+          <button onClick={() => setEditing((v) => !v)} style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 4 }}>
+            <Pencil size={13} />
+          </button>
+          <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: TOKENS.textFaint, padding: 4 }}>
+            <Trash2 size={13} />
+          </button>
+        </div>
       </div>
       {editing && <TxEditPanel t={t} categories={categories} onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }} onCancel={() => setEditing(false)} />}
     </div>
@@ -139,7 +141,7 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
 
   return (
     <div style={{ background: TOKENS.surfaceAlt, padding: "14px 16px", borderTop: `1px solid ${TOKENS.border}` }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+      <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 4 }}>Categoría</div>
           <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: "100%", padding: "7px 9px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}>
@@ -210,7 +212,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
           </button>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+      <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
         <FieldInput label="Fecha" type="date" value={date} onChange={setDate} />
         <FieldInput label="Monto (CLP)" type="number" value={amount} onChange={setAmount} placeholder="0" />
       </div>

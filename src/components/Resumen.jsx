@@ -29,19 +29,21 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth }) {
         <StatCard label="Balance del período" value={formatCLP(stats.balance)} accent={stats.balance >= 0 ? TOKENS.income : TOKENS.expense} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Panel title={`Gasto por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
           {byCategory.length === 0 ? <EmptyNote text="Sin gastos registrados en este período." /> : (
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <ResponsiveContainer width="55%" height={220}>
-                <PieChart>
-                  <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}>
-                    {byCategory.map((entry) => <Cell key={entry.id} fill={entry.color} stroke={TOKENS.surface} strokeWidth={2} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => formatCLP(v)} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
+            <div className="category-chart-row" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div className="category-chart-pie" style={{ width: "55%", flexShrink: 0 }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}>
+                      {byCategory.map((entry) => <Cell key={entry.id} fill={entry.color} stroke={TOKENS.surface} strokeWidth={2} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => formatCLP(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
                 {byCategory.slice(0, 6).map((c) => {
                   const CatIcon = c.icon;
                   return (

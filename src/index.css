@@ -38,3 +38,70 @@ select:focus-visible {
   outline: 2px solid #5b9bd5;
   outline-offset: 1px;
 }
+
+/* ---- responsive layout — breakpoint at 640px ---------------------------- */
+
+@media (max-width: 640px) {
+  .app-main {
+    padding: 20px 14px 60px !important;
+  }
+
+  .header-subtitle {
+    display: none;
+  }
+
+  .header-controls {
+    flex-wrap: wrap;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+  .resumen-charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .category-chart-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .category-chart-pie {
+    width: 100% !important;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .txrow-grid {
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas:
+      "desc actions"
+      "date date"
+      "cat cat"
+      "amount amount";
+    row-gap: 4px;
+    padding: 12px 14px !important;
+  }
+
+  .tx-date {
+    grid-area: date;
+  }
+  .tx-desc {
+    grid-area: desc;
+    min-width: 0;
+  }
+  .tx-cat {
+    grid-area: cat;
+  }
+  .tx-amount {
+    grid-area: amount;
+    text-align: right;
+    font-size: 15px !important;
+  }
+  .tx-actions {
+    grid-area: actions;
+  }
+}

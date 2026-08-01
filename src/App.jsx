@@ -309,7 +309,7 @@ export default function App({ onSignOut }) {
     <div style={{ background: TOKENS.bg, minHeight: "100vh", color: TOKENS.text, fontFamily: "'Inter', sans-serif" }}>
       <Header tab={tab} setTab={setTab} onManageCats={() => setShowCatManager(true)} onSignOut={onSignOut} />
 
-      <main style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 80px" }}>
+      <main className="app-main" style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 80px" }}>
         {syncError && (
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
