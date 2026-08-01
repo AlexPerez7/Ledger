@@ -34,22 +34,6 @@ export default function App({ onSignOut }) {
   );
   const getCat = useCallback((id) => catMap[id] || { id, label: id, color: TOKENS.textFaint, icon: DEFAULT_CATEGORY_ICON }, [catMap]);
 
-  // ---- persistence (Supabase, vía src/lib/storage.js) ----------------------
-  useEffect(() => {
-    (async () => {
-      const tx = await storage.get("transactions");
-      if (tx) setTransactions(JSON.parse(tx.value));
-      const cats = await storage.get("categories");
-      if (cats) setCategories(JSON.parse(cats.value));
-      const rules = await storage.get("merchantRules");
-      if (rules) setMerchantRules(JSON.parse(rules.value));
-      if (!tx || !cats || !rules) {
-        setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
-      }
-      setLoaded(true);
-    })();
-  }, []);
-
   const persistTx = useCallback(async (next) => {
     setTransactions(next);
     const res = await storage.set("transactions", JSON.stringify(next));
@@ -65,6 +49,30 @@ export default function App({ onSignOut }) {
     const res = await storage.set("merchantRules", JSON.stringify(next));
     setSyncError(res ? null : "No se pudo guardar en el servidor. Revisa tu conexión — si recargas ahora podrías perder este cambio.");
   }, []);
+
+  // ---- persistence (Supabase, vía src/lib/storage.js) ----------------------
+  useEffect(() => {
+    (async () => {
+      const tx = await storage.get("transactions");
+      if (tx) setTransactions(JSON.parse(tx.value));
+
+      const cats = await storage.get("categories");
+      if (cats) {
+        const parsedCats = JSON.parse(cats.value);
+        // usuario nuevo, o que quedó sin categorías: sembramos las por defecto
+        if (parsedCats.length === 0) await persistCats(DEFAULT_CATEGORIES);
+        else setCategories(parsedCats);
+      }
+
+      const rules = await storage.get("merchantRules");
+      if (rules) setMerchantRules(JSON.parse(rules.value));
+
+      if (!tx || !cats || !rules) {
+        setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
+      }
+      setLoaded(true);
+    })();
+  }, [persistCats]);
 
   // ---- import xls -----------------------------------------------------------
   const handleFile = useCallback(
