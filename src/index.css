@@ -1,5 +1,57 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
+/* ---- theme tokens — "ledger console", oscuro por defecto -------------- */
+
+:root {
+  --color-bg: #0e141b;
+  --color-surface: #161e27;
+  --color-surface-alt: #1d2733;
+  --color-border: #28323f;
+  --color-text: #e7edf3;
+  --color-text-muted: #8494a3;
+  --color-text-faint: #57646f;
+  --color-income: #3fbf8f;
+  --color-expense: #e8654f;
+  --color-pending: #f0b94a;
+  --color-accent: #5b9bd5;
+
+  --tint-accent: rgba(91, 155, 213, 0.12);
+  --tint-accent-soft: rgba(91, 155, 213, 0.06);
+  --tint-income: rgba(63, 191, 143, 0.12);
+  --tint-expense: rgba(232, 101, 79, 0.12);
+
+  --heat-0: var(--color-surface-alt);
+  --heat-1: #4a2a22;
+  --heat-2: #7a3a2a;
+  --heat-3: #b04d34;
+  --heat-4: #e8654f;
+}
+
+:root[data-theme="light"] {
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-surface-alt: #eef1f4;
+  --color-border: #dde3e9;
+  --color-text: #1a2430;
+  --color-text-muted: #5b6672;
+  --color-text-faint: #8b95a1;
+  --color-income: #1f9d6f;
+  --color-expense: #d9503a;
+  --color-pending: #c98a1f;
+  --color-accent: #3e7fb8;
+
+  --tint-accent: rgba(62, 127, 184, 0.1);
+  --tint-accent-soft: rgba(62, 127, 184, 0.05);
+  --tint-income: rgba(31, 157, 111, 0.1);
+  --tint-expense: rgba(217, 80, 58, 0.1);
+
+  --heat-0: var(--color-surface-alt);
+  --heat-1: #f6d4c8;
+  --heat-2: #f0a98f;
+  --heat-3: #e57c56;
+  --heat-4: #d9503a;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -7,7 +59,7 @@
 body {
   margin: 0;
   font-family: "Inter", sans-serif;
-  background: #0e141b;
+  background: var(--color-bg);
 }
 
 .mono {
@@ -22,7 +74,7 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #28323f;
+  background: var(--color-border);
   border-radius: 4px;
 }
 
@@ -35,7 +87,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 2px solid #5b9bd5;
+  outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
 

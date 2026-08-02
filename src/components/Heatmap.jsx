@@ -9,13 +9,14 @@ const WEEKS = 53;
 const CELL = 11;
 const GAP = 3;
 
-// niveles de intensidad — mismo tono que TOKENS.expense, más opaco a más gasto
+// niveles de intensidad — tonos sólidos por tema (index.css), no alpha sobre
+// TOKENS.expense: mezclar transparencia se ve distinto en fondo claro vs oscuro.
 const LEVEL_COLORS = [
-  TOKENS.surfaceAlt,
-  `${TOKENS.expense}33`,
-  `${TOKENS.expense}66`,
-  `${TOKENS.expense}99`,
-  TOKENS.expense,
+  "var(--heat-0)",
+  "var(--heat-1)",
+  "var(--heat-2)",
+  "var(--heat-3)",
+  "var(--heat-4)",
 ];
 
 function toISODate(d) {

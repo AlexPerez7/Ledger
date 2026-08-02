@@ -62,7 +62,7 @@ export function pillStyle(active) {
   return {
     padding: "6px 13px", borderRadius: 999, fontSize: 12.5, fontWeight: 500, cursor: "pointer",
     border: `1px solid ${active ? TOKENS.accent : TOKENS.border}`,
-    background: active ? "rgba(91,155,213,0.12)" : "transparent",
+    background: active ? "var(--tint-accent)" : "transparent",
     color: active ? TOKENS.accent : TOKENS.textMuted,
     textTransform: "capitalize",
   };

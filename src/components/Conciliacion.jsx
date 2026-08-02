@@ -31,7 +31,7 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth }) {
       <Panel
         title={`Conciliar ${fmtMonth(currentMonth)}`}
         right={
-          <button onClick={() => { const n = reconcileMonth(currentMonth); setResult(n); }} style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: TOKENS.accent, color: "#0E141B", fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={() => { const n = reconcileMonth(currentMonth); setResult(n); }} style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: TOKENS.accent, color: TOKENS.bg, fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <ScanLine size={13} /> Conciliar mes
           </button>
         }

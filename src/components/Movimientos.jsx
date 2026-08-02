@@ -21,7 +21,7 @@ export function Movimientos({
           style={{
             border: `1.5px dashed ${dragOver ? TOKENS.accent : TOKENS.border}`, borderRadius: 12, padding: "18px 16px",
             display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
-            background: dragOver ? "rgba(91,155,213,0.06)" : TOKENS.surface,
+            background: dragOver ? "var(--tint-accent-soft)" : TOKENS.surface,
           }}
         >
           <input type="file" accept=".xls,.xlsx" style={{ display: "none" }} onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
@@ -221,7 +221,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
           <button key={v} onClick={() => setType(v)} style={{
             flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 12.5, cursor: "pointer",
             border: `1px solid ${type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.border}`,
-            background: type === v ? (v === "expense" ? "rgba(232,101,79,0.12)" : "rgba(63,191,143,0.12)") : "transparent",
+            background: type === v ? (v === "expense" ? "var(--tint-expense)" : "var(--tint-income)") : "transparent",
             color: type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.textMuted,
           }}>
             {v === "expense" ? "Gasto" : "Ingreso"}
@@ -239,7 +239,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
           {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
       </div>
-      <button onClick={submit} style={{ width: "100%", padding: "10px 0", borderRadius: 8, border: "none", cursor: "pointer", background: TOKENS.accent, color: "#0E141B", fontWeight: 600, fontSize: 13 }}>
+      <button onClick={submit} style={{ width: "100%", padding: "10px 0", borderRadius: 8, border: "none", cursor: "pointer", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 13 }}>
         Guardar movimiento
       </button>
     </div>

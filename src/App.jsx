@@ -16,7 +16,7 @@ import { Movimientos } from "./components/Movimientos.jsx";
 import { Conciliacion } from "./components/Conciliacion.jsx";
 import { ToastStack } from "./components/Toast.jsx";
 
-export default function App({ onSignOut }) {
+export default function App({ onSignOut, theme, onToggleTheme }) {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [merchantRules, setMerchantRules] = useState([]);
@@ -320,13 +320,13 @@ export default function App({ onSignOut }) {
 
   return (
     <div style={{ background: TOKENS.bg, minHeight: "100vh", color: TOKENS.text, fontFamily: "'Inter', sans-serif" }}>
-      <Header tab={tab} setTab={setTab} onManageCats={() => setShowCatManager(true)} onSignOut={onSignOut} />
+      <Header tab={tab} setTab={setTab} onManageCats={() => setShowCatManager(true)} onSignOut={onSignOut} theme={theme} onToggleTheme={onToggleTheme} />
 
       <main className="app-main" style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 80px" }}>
         {syncError && (
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-            background: "rgba(232,101,79,0.12)", border: `1px solid ${TOKENS.expense}`, color: TOKENS.expense,
+            background: "var(--tint-expense)", border: `1px solid ${TOKENS.expense}`, color: TOKENS.expense,
             borderRadius: 10, padding: "10px 14px", fontSize: 12.5, marginBottom: 18,
           }}>
             <span>{syncError}</span>

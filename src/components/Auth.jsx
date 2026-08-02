@@ -61,7 +61,7 @@ export function Auth() {
           disabled={loading}
           style={{
             width: "100%", padding: "10px 0", borderRadius: 8, border: "none",
-            background: TOKENS.accent, color: "#0E141B", fontSize: 13.5, fontWeight: 600,
+            background: TOKENS.accent, color: TOKENS.bg, fontSize: 13.5, fontWeight: 600,
             cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1,
           }}
         >

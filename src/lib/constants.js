@@ -8,18 +8,20 @@ import {
 // Design tokens — "ledger console": fondo tinta oscura, cifras en monoespaciada,
 // un duotono controlado teal/coral para ingreso vs. gasto, ámbar para lo que
 // todavía necesita revisión humana (movimientos sin conciliar).
+// Los valores son CSS custom properties (definidas en index.css para modo
+// oscuro y claro) para que cambiar de tema no requiera tocar cada componente.
 export const TOKENS = {
-  bg: "#0E141B",
-  surface: "#161E27",
-  surfaceAlt: "#1D2733",
-  border: "#28323F",
-  text: "#E7EDF3",
-  textMuted: "#8494A3",
-  textFaint: "#57646F",
-  income: "#3FBF8F",
-  expense: "#E8654F",
-  pending: "#F0B94A",
-  accent: "#5B9BD5",
+  bg: "var(--color-bg)",
+  surface: "var(--color-surface)",
+  surfaceAlt: "var(--color-surface-alt)",
+  border: "var(--color-border)",
+  text: "var(--color-text)",
+  textMuted: "var(--color-text-muted)",
+  textFaint: "var(--color-text-faint)",
+  income: "var(--color-income)",
+  expense: "var(--color-expense)",
+  pending: "var(--color-pending)",
+  accent: "var(--color-accent)",
 };
 
 export const DEFAULT_CATEGORIES = [

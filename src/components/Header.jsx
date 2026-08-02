@@ -1,8 +1,8 @@
-import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut } from "lucide-react";
+import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
 
-export function Header({ tab, setTab, onManageCats, onSignOut }) {
+export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTheme }) {
   const items = [
     { id: "resumen", label: "Resumen", icon: LayoutGrid },
     { id: "movimientos", label: "Movimientos", icon: ListChecks },
@@ -40,6 +40,14 @@ export function Header({ tab, setTab, onManageCats, onSignOut }) {
               );
             })}
           </nav>
+          {onToggleTheme && (
+            <button onClick={onToggleTheme} title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"} style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
+              border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
+            }}>
+              {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+            </button>
+          )}
           {onSignOut && (
             <button onClick={onSignOut} title="Cerrar sesión" style={{
               display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
