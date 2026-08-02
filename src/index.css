@@ -131,16 +131,12 @@ select:focus-visible {
     grid-template-columns: 1fr auto !important;
     grid-template-areas:
       "desc actions"
-      "date date"
       "cat cat"
       "amount amount";
     row-gap: 4px;
     padding: 12px 14px !important;
   }
 
-  .tx-date {
-    grid-area: date;
-  }
   .tx-desc {
     grid-area: desc;
     min-width: 0;

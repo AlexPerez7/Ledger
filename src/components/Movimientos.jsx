@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
-import { formatCLP, formatDateDisplay, suggestMatchKey } from "../lib/utils.js";
+import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { useIsMobile } from "../lib/useIsMobile.js";
@@ -130,8 +130,29 @@ export function Movimientos({
             />
           )
         ) : (
-          filteredTx.map((t, i) => (
-            <TxRow key={t.id} t={t} isLast={i === filteredTx.length - 1} categories={categories} getCat={getCat} saveTxEdit={saveTxEdit} onDelete={deleteTransaction} />
+          groupByDate(filteredTx).map((group) => (
+            <div key={group.date}>
+              <div
+                style={{
+                  padding: "9px 16px", fontSize: 11, fontWeight: 600, color: TOKENS.textFaint,
+                  textTransform: "uppercase", letterSpacing: "0.03em", background: TOKENS.surfaceAlt,
+                  borderBottom: `1px solid ${TOKENS.border}`,
+                }}
+              >
+                {formatDayHeading(group.date)}
+              </div>
+              {group.items.map((t, i) => (
+                <TxRow
+                  key={t.id}
+                  t={t}
+                  isLast={i === group.items.length - 1}
+                  categories={categories}
+                  getCat={getCat}
+                  saveTxEdit={saveTxEdit}
+                  onDelete={deleteTransaction}
+                />
+              ))}
+            </div>
           ))
         )}
       </div>
@@ -184,7 +205,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
         <motion.div
           className="txrow-grid"
           style={{
-            display: "grid", gridTemplateColumns: "84px 1fr 170px 130px auto", alignItems: "center", gap: 10,
+            display: "grid", gridTemplateColumns: "1fr 170px 130px auto", alignItems: "center", gap: 10,
             padding: "11px 16px", background: TOKENS.surface, touchAction: "pan-y", position: "relative",
           }}
           drag={isMobile ? "x" : false}
@@ -193,7 +214,6 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           animate={swipeControls}
           onDragEnd={handleDragEnd}
         >
-        <div className="tx-date mono" style={{ fontSize: 11.5, color: TOKENS.textFaint }}>{formatDateDisplay(t.date)}</div>
         <div className="tx-desc" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {t.alias ? (
             <>

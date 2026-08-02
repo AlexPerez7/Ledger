@@ -74,6 +74,42 @@ export function monthKey(iso) {
   return iso ? iso.slice(0, 7) : "";
 }
 
+const WEEKDAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MONTH_NAMES_LONG = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+function toIsoDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Encabezado para un grupo de movimientos del mismo día: "Hoy"/"Ayer" para
+// los más recientes, si no "Lunes, 3 de agosto".
+export function formatDayHeading(iso, today = new Date()) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  if (iso === toIsoDate(today)) return "Hoy";
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (iso === toIsoDate(yesterday)) return "Ayer";
+  const weekday = WEEKDAY_NAMES[date.getDay()];
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${d} de ${MONTH_NAMES_LONG[m - 1]}`;
+}
+
+// Agrupa transacciones por fecha preservando el orden de aparición (la lista
+// ya llega ordenada por fecha desde App.jsx, así que los grupos también
+// quedan ordenados).
+export function groupByDate(transactions) {
+  const map = new Map();
+  for (const t of transactions) {
+    if (!map.has(t.date)) map.set(t.date, []);
+    map.get(t.date).push(t);
+  }
+  return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
+}
+
 export function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }

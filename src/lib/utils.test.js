@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   autoCategory, suggestMatchKey, applyMerchantRules, parseClpNumber,
   parseBankDate, makeKey, formatCLP, formatDateDisplay, monthKey, uid,
+  formatDayHeading, groupByDate,
 } from "./utils.js";
 
 describe("parseClpNumber", () => {
@@ -129,6 +130,53 @@ describe("applyMerchantRules", () => {
   });
   it("devuelve null si ninguna regla coincide", () => {
     expect(applyMerchantRules("FARMACIA AHUMADA", rules)).toBeNull();
+  });
+});
+
+describe("formatDayHeading", () => {
+  const today = new Date(2026, 7, 3); // 3 de agosto de 2026 (lunes)
+  it("devuelve 'Hoy' para la fecha de referencia", () => {
+    expect(formatDayHeading("2026-08-03", today)).toBe("Hoy");
+  });
+  it("devuelve 'Ayer' para el día anterior", () => {
+    expect(formatDayHeading("2026-08-02", today)).toBe("Ayer");
+  });
+  it("devuelve 'día de la semana, día de mes' para el resto", () => {
+    expect(formatDayHeading("2026-07-28", today)).toBe("Martes, 28 de julio");
+  });
+  it("cruza correctamente el límite de mes/año al calcular 'ayer'", () => {
+    expect(formatDayHeading("2025-12-31", new Date(2026, 0, 1))).toBe("Ayer");
+  });
+  it("devuelve vacío para input vacío", () => {
+    expect(formatDayHeading("", today)).toBe("");
+  });
+});
+
+describe("groupByDate", () => {
+  it("agrupa transacciones consecutivas del mismo día", () => {
+    const tx = [
+      { id: "1", date: "2026-08-03" },
+      { id: "2", date: "2026-08-03" },
+      { id: "3", date: "2026-08-02" },
+    ];
+    const groups = groupByDate(tx);
+    expect(groups).toEqual([
+      { date: "2026-08-03", items: [tx[0], tx[1]] },
+      { date: "2026-08-02", items: [tx[2]] },
+    ]);
+  });
+  it("mantiene el orden de primera aparición de cada fecha", () => {
+    const tx = [
+      { id: "1", date: "2026-08-01" },
+      { id: "2", date: "2026-08-02" },
+      { id: "3", date: "2026-08-01" },
+    ];
+    const groups = groupByDate(tx);
+    expect(groups.map((g) => g.date)).toEqual(["2026-08-01", "2026-08-02"]);
+    expect(groups[0].items).toEqual([tx[0], tx[2]]);
+  });
+  it("devuelve un array vacío para una lista vacía", () => {
+    expect(groupByDate([])).toEqual([]);
   });
 });
 
