@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
@@ -22,6 +22,34 @@ export function Movimientos({
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Selección múltiple: por ahora solo rastrea IDs elegidos (base para
+  // futuras acciones masivas — categorizar/borrar en lote, etc.), sin
+  // ninguna acción real todavía.
+  const [selectedIds, setSelectedIds] = useState([]);
+  const selectAllRef = useRef(null);
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const visibleIds = filteredTx.map((t) => t.id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+  const someVisibleSelected = visibleIds.some((id) => selectedIds.includes(id));
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  // el estado "indeterminado" (algunas, no todas) del checkbox nativo solo
+  // se puede setear vía DOM, no existe como prop de React
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someVisibleSelected && !allVisibleSelected;
+  }, [someVisibleSelected, allVisibleSelected]);
 
   const handleExportBackup = async () => {
     if (exportingBackup) return;
@@ -76,7 +104,26 @@ export function Movimientos({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+        {hasTransactions && (
+          <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+            <input
+              ref={selectAllRef}
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={toggleSelectAll}
+              disabled={filteredTx.length === 0}
+              aria-label={allVisibleSelected ? "Deseleccionar todo" : "Seleccionar todo"}
+              title={allVisibleSelected ? "Deseleccionar todo" : "Seleccionar todo"}
+              style={{ accentColor: TOKENS.accent, cursor: filteredTx.length === 0 ? "default" : "pointer", width: 15, height: 15 }}
+            />
+            {selectedIds.length > 0 && (
+              <span style={{ fontSize: 12, color: TOKENS.textMuted, whiteSpace: "nowrap" }}>
+                {selectedIds.length} seleccionado{selectedIds.length === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
+        )}
         <div style={{ position: "relative", flex: "1 1 220px" }}>
           <input
             value={search}
@@ -157,6 +204,8 @@ export function Movimientos({
                   getCat={getCat}
                   saveTxEdit={saveTxEdit}
                   onDelete={deleteTransaction}
+                  selected={selectedIds.includes(t.id)}
+                  onToggleSelect={toggleSelectOne}
                 />
               ))}
             </div>
@@ -217,7 +266,7 @@ function ImportModal({ onClose, onFile }) {
   );
 }
 
-function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
+function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect }) {
   const [editing, setEditing] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const cat = getCat(t.category);
@@ -262,7 +311,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
         <motion.div
           className="txrow-grid"
           style={{
-            display: "grid", gridTemplateColumns: "1fr 170px 130px auto", alignItems: "center", gap: 10,
+            display: "grid", gridTemplateColumns: "20px 1fr 170px 130px auto", alignItems: "center", gap: 10,
             padding: "11px 16px", background: TOKENS.surface, touchAction: "pan-y", position: "relative",
           }}
           drag={isMobile ? "x" : false}
@@ -271,6 +320,15 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           animate={swipeControls}
           onDragEnd={handleDragEnd}
         >
+        <div className="tx-check">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(t.id)}
+            aria-label={`Seleccionar movimiento: ${t.alias || t.description}`}
+            style={{ accentColor: TOKENS.accent, cursor: "pointer", width: 15, height: 15 }}
+          />
+        </div>
         <div className="tx-desc" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {t.alias ? (
             <>

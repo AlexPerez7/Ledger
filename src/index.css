@@ -128,15 +128,19 @@ select:focus-visible {
   }
 
   .txrow-grid {
-    grid-template-columns: 1fr auto !important;
+    grid-template-columns: auto 1fr auto !important;
     grid-template-areas:
-      "desc actions"
-      "cat cat"
-      "amount amount";
+      "check desc actions"
+      "check cat cat"
+      "check amount amount";
     row-gap: 4px;
     padding: 12px 14px !important;
   }
 
+  .tx-check {
+    grid-area: check;
+    align-self: center;
+  }
   .tx-desc {
     grid-area: desc;
     min-width: 0;
