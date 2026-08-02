@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 
 import { TOKENS, DEFAULT_CATEGORIES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "./lib/constants.js";
 import { storage } from "./lib/storage.js";
+import { useToasts } from "./lib/useToasts.js";
 import {
   autoCategory, applyMerchantRules, parseClpNumber, parseBankDate,
   makeKey, monthKey, uid,
@@ -13,6 +14,7 @@ import { CategoryManager } from "./components/CategoryManager.jsx";
 import { Resumen } from "./components/Resumen.jsx";
 import { Movimientos } from "./components/Movimientos.jsx";
 import { Conciliacion } from "./components/Conciliacion.jsx";
+import { ToastStack } from "./components/Toast.jsx";
 
 export default function App({ onSignOut }) {
   const [transactions, setTransactions] = useState([]);
@@ -24,7 +26,7 @@ export default function App({ onSignOut }) {
   const [monthFilter, setMonthFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
-  const [importMsg, setImportMsg] = useState(null);
+  const { toasts, push: pushToast, update: updateToast, dismiss: dismissToast } = useToasts();
   const [showManualForm, setShowManualForm] = useState(false);
   const [showCatManager, setShowCatManager] = useState(false);
 
@@ -77,7 +79,7 @@ export default function App({ onSignOut }) {
   // ---- import xls -----------------------------------------------------------
   const handleFile = useCallback(
     async (file) => {
-      setImportMsg({ type: "loading", text: "Leyendo archivo…" });
+      const toastId = pushToast("loading", "Leyendo archivo…");
       try {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
@@ -119,27 +121,29 @@ export default function App({ onSignOut }) {
         }
 
         if (imported.length === 0) {
-          setImportMsg({
-            type: skipped > 0 ? "warn" : "error",
-            text: skipped > 0
+          updateToast(
+            toastId,
+            skipped > 0 ? "warn" : "error",
+            skipped > 0
               ? `Este archivo ya estaba importado — los ${skipped} movimientos que trae ya existían, no se agregó nada nuevo.`
-              : "No se reconocieron movimientos en este archivo.",
-          });
+              : "No se reconocieron movimientos en este archivo."
+          );
           return;
         }
 
         const next = [...transactions, ...imported];
         await persistTx(next);
-        setImportMsg({
-          type: "ok",
-          text: `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}${skipped ? `, ${skipped} ya existía${skipped === 1 ? "" : "n"} (omitidos).` : "."}`,
-        });
+        updateToast(
+          toastId,
+          "ok",
+          `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}${skipped ? `, ${skipped} ya existía${skipped === 1 ? "" : "n"} (omitidos).` : "."}`
+        );
       } catch (e) {
         console.error(e);
-        setImportMsg({ type: "error", text: "No se pudo leer el archivo. ¿Es el .xls de movimientos del banco?" });
+        updateToast(toastId, "error", "No se pudo leer el archivo. ¿Es el .xls de movimientos del banco?");
       }
     },
-    [transactions, merchantRules, persistTx]
+    [transactions, merchantRules, persistTx, pushToast, updateToast]
   );
 
   // ---- manual entries ---------------------------------------------------------
@@ -343,7 +347,6 @@ export default function App({ onSignOut }) {
             showManualForm={showManualForm} setShowManualForm={setShowManualForm}
             addManual={addManual}
             handleFile={handleFile}
-            importMsg={importMsg}
           />
         )}
 
@@ -351,6 +354,8 @@ export default function App({ onSignOut }) {
           <Conciliacion currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth} />
         )}
       </main>
+
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

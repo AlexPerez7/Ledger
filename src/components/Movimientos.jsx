@@ -6,7 +6,7 @@ import { EmptyState, FieldInput } from "./Shared.jsx";
 
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
-  saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile, importMsg,
+  saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile,
 }) {
   const [dragOver, setDragOver] = useState(false);
 
@@ -46,17 +46,6 @@ export function Movimientos({
           </div>
         </button>
       </div>
-
-      {importMsg && (
-        <div style={{
-          marginBottom: 16, padding: "9px 14px", borderRadius: 8, fontSize: 12.5,
-          background: importMsg.type === "error" ? "rgba(232,101,79,0.1)" : importMsg.type === "warn" ? "rgba(240,185,74,0.1)" : "rgba(63,191,143,0.1)",
-          color: importMsg.type === "error" ? TOKENS.expense : importMsg.type === "warn" ? TOKENS.pending : TOKENS.income,
-          border: `1px solid ${(importMsg.type === "error" ? TOKENS.expense : importMsg.type === "warn" ? TOKENS.pending : TOKENS.income)}33`,
-        }}>
-          {importMsg.text}
-        </div>
-      )}
 
       {showManualForm && <ManualForm categories={categories} onClose={() => setShowManualForm(false)} onSubmit={addManual} />}
 
