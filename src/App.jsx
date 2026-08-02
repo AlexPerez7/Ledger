@@ -6,18 +6,22 @@ import { useToasts } from "./lib/useToasts.js";
 import { readFileWithProgress } from "./lib/readFile.js";
 import {
   autoCategory, applyMerchantRules, parseClpNumber, parseBankDate,
-  makeKey, monthKey, uid,
+  makeKey, monthKey, uid, computeInsights,
 } from "./lib/utils.js";
 
 import { Header, MonthBar } from "./components/Header.jsx";
 import { CategoryManager } from "./components/CategoryManager.jsx";
-import { Movimientos } from "./components/Movimientos.jsx";
 import { Conciliacion } from "./components/Conciliacion.jsx";
 import { ToastStack } from "./components/Toast.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
+import { Onboarding } from "./components/Onboarding.jsx";
 
-// recharts solo hace falta en el tab Resumen — se separa en su propio chunk
+// recharts y framer-motion solo hacen falta en sus tabs — se separan en sus
+// propios chunks para no pesar la carga inicial (que arranca en Resumen).
 const Resumen = lazy(() => import("./components/Resumen.jsx").then((m) => ({ default: m.Resumen })));
+const Movimientos = lazy(() => import("./components/Movimientos.jsx").then((m) => ({ default: m.Movimientos })));
+
+const ONBOARDING_KEY = "ledger:onboarding-done";
 
 export default function App({ onSignOut, theme, onToggleTheme }) {
   const [transactions, setTransactions] = useState([]);
@@ -32,6 +36,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const { toasts, push: pushToast, update: updateToast, dismiss: dismissToast } = useToasts();
   const [showManualForm, setShowManualForm] = useState(false);
   const [showCatManager, setShowCatManager] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return localStorage.getItem(ONBOARDING_KEY) !== "1"; } catch { return false; }
+  });
+  const dismissOnboarding = useCallback(() => {
+    try { localStorage.setItem(ONBOARDING_KEY, "1"); } catch { /* localStorage puede fallar en modo privado */ }
+    setShowOnboarding(false);
+  }, []);
 
   const catMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, { ...c, icon: resolveCategoryIcon(c) }])),
@@ -373,6 +384,11 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     return { spentSoFar, typicalPace, dayOfMonth, monthKey: thisMonthKey };
   }, [dailySpend, transactions]);
 
+  const insights = useMemo(
+    () => computeInsights(transactions, excludedCategoryIds, (id) => getCat(id).label),
+    [transactions, excludedCategoryIds, getCat]
+  );
+
   const reconcileStats = useMemo(() => {
     if (!currentMonth) return null;
     const inMonth = transactions.filter((t) => monthKey(t.date) === currentMonth);
@@ -426,6 +442,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
               <Resumen
                 stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
                 dailySpend={dailySpend} hasTransactions={transactions.length > 0} heroStat={heroStat}
+                insights={insights} pushToast={pushToast}
               />
             </Suspense>
           </ErrorBoundary>
@@ -433,19 +450,21 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         {tab === "movimientos" && (
           <ErrorBoundary>
-            <Movimientos
-              filteredTx={filteredTx}
-              hasTransactions={transactions.length > 0}
-              categories={categories}
-              getCat={getCat}
-              search={search} setSearch={setSearch}
-              catFilter={catFilter} setCatFilter={setCatFilter}
-              saveTxEdit={saveTxEdit}
-              deleteTransaction={deleteTransaction}
-              showManualForm={showManualForm} setShowManualForm={setShowManualForm}
-              addManual={addManual}
-              handleFile={handleFile}
-            />
+            <Suspense fallback={<div style={{ color: TOKENS.textFaint, padding: "40px 0", textAlign: "center", fontSize: 12.5 }}>Cargando…</div>}>
+              <Movimientos
+                filteredTx={filteredTx}
+                hasTransactions={transactions.length > 0}
+                categories={categories}
+                getCat={getCat}
+                search={search} setSearch={setSearch}
+                catFilter={catFilter} setCatFilter={setCatFilter}
+                saveTxEdit={saveTxEdit}
+                deleteTransaction={deleteTransaction}
+                showManualForm={showManualForm} setShowManualForm={setShowManualForm}
+                addManual={addManual}
+                handleFile={handleFile}
+              />
+            </Suspense>
           </ErrorBoundary>
         )}
 
@@ -457,6 +476,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       </main>
 
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
+      {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
     </div>
   );
 }

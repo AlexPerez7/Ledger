@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay, suggestMatchKey } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
+import { useIsMobile } from "../lib/useIsMobile.js";
+
+const SWIPE_ACTION_WIDTH = 128; // ancho de los 2 botones (editar + borrar) revelados al deslizar
 
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
@@ -109,11 +113,20 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
   const [leaving, setLeaving] = useState(false);
   const cat = getCat(t.category);
   const CatIcon = cat.icon;
+  const isMobile = useIsMobile();
+  const swipeControls = useAnimation();
+  const closeSwipe = () => swipeControls.start({ x: 0, transition: { duration: 0.18 } });
 
   // espera a que termine la animación de colapso antes de sacarla del estado
   const handleDelete = () => {
+    closeSwipe();
     setLeaving(true);
     setTimeout(() => onDelete(t.id), 220);
+  };
+
+  const handleDragEnd = (_e, info) => {
+    if (info.offset.x < -SWIPE_ACTION_WIDTH / 2) swipeControls.start({ x: -SWIPE_ACTION_WIDTH, transition: { duration: 0.18 } });
+    else closeSwipe();
   };
 
   return (
@@ -121,7 +134,34 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
       <div
         className={`tx-row-wrap tx-row-enter${leaving ? " tx-row-leaving" : ""}`}
       >
-      <div className="txrow-grid" style={{ display: "grid", gridTemplateColumns: "84px 1fr 170px 130px auto", alignItems: "center", gap: 10, padding: "11px 16px" }}>
+      <div className="tx-swipe-clip">
+        {isMobile && (
+          <div className="tx-swipe-actions" style={{ width: SWIPE_ACTION_WIDTH }}>
+            <button
+              className="tx-swipe-btn tx-swipe-edit"
+              onClick={() => { closeSwipe(); setEditing((v) => !v); }}
+              aria-label={editing ? "Cerrar edición" : "Editar movimiento"}
+              title="Editar"
+            >
+              <Pencil size={16} />
+            </button>
+            <div className="tx-swipe-btn tx-swipe-delete">
+              <ConfirmDeleteButton onConfirm={handleDelete} text="¿Eliminar este movimiento?" title="Eliminar movimiento" size={16} color="#fff" />
+            </div>
+          </div>
+        )}
+        <motion.div
+          className="txrow-grid"
+          style={{
+            display: "grid", gridTemplateColumns: "84px 1fr 170px 130px auto", alignItems: "center", gap: 10,
+            padding: "11px 16px", background: TOKENS.surface, touchAction: "pan-y", position: "relative",
+          }}
+          drag={isMobile ? "x" : false}
+          dragConstraints={{ left: -SWIPE_ACTION_WIDTH, right: 0 }}
+          dragElastic={0.06}
+          animate={swipeControls}
+          onDragEnd={handleDragEnd}
+        >
         <div className="tx-date mono" style={{ fontSize: 11.5, color: TOKENS.textFaint }}>{formatDateDisplay(t.date)}</div>
         <div className="tx-desc" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {t.alias ? (
@@ -153,6 +193,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           </button>
           <ConfirmDeleteButton onConfirm={handleDelete} text="¿Eliminar este movimiento?" title="Eliminar movimiento" size={13} />
         </div>
+        </motion.div>
       </div>
       </div>
       {editing && <TxEditPanel t={t} categories={categories} onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }} onCancel={() => setEditing(false)} />}

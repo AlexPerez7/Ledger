@@ -77,3 +77,65 @@ export function monthKey(iso) {
 export function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
+
+// Compara el mes actual con el anterior y arma 0-3 frases sueltas: variación
+// total, la categoría que más subió (con piso en $ y % para evitar ruido de
+// categorías chicas), y si el mes va en verde. getCatLabel resuelve id->nombre.
+export function computeInsights(transactions, excludedCategoryIds, getCatLabel, referenceDate = new Date()) {
+  const thisMonthKey = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, "0")}`;
+  const prevDate = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
+  const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+
+  const isExpense = (t) => t.amount < 0 && !excludedCategoryIds.has(t.category);
+
+  const sumByCat = (mk) => {
+    const map = {};
+    let total = 0;
+    for (const t of transactions) {
+      if (monthKey(t.date) !== mk || !isExpense(t)) continue;
+      const v = Math.abs(t.amount);
+      map[t.category] = (map[t.category] || 0) + v;
+      total += v;
+    }
+    return { map, total };
+  };
+
+  const cur = sumByCat(thisMonthKey);
+  const prev = sumByCat(prevMonthKey);
+  const list = [];
+  if (cur.total === 0 && prev.total === 0) return list;
+
+  if (prev.total > 0) {
+    const diffPct = ((cur.total - prev.total) / prev.total) * 100;
+    if (diffPct >= 5) list.push(`Llevas gastado ${Math.round(diffPct)}% más que el mes pasado en total.`);
+    else if (diffPct <= -5) list.push(`Llevas gastado ${Math.round(Math.abs(diffPct))}% menos que el mes pasado en total.`);
+  }
+
+  let biggest = null;
+  for (const catId of Object.keys(cur.map)) {
+    const curVal = cur.map[catId];
+    const prevVal = prev.map[catId] || 0;
+    const delta = curVal - prevVal;
+    if (delta <= 0 || curVal < 10000) continue;
+    const pct = prevVal > 0 ? (delta / prevVal) * 100 : null;
+    if (pct !== null && pct < 15) continue;
+    if (!biggest || delta > biggest.delta) biggest = { catId, delta, pct, curVal };
+  }
+  if (biggest) {
+    const label = getCatLabel(biggest.catId);
+    list.push(
+      biggest.pct === null
+        ? `Este mes empezaste a gastar en ${label} (${formatCLP(biggest.curVal)}).`
+        : `Gastaste ${Math.round(biggest.pct)}% más en ${label} que el mes pasado.`
+    );
+  }
+
+  let income = 0;
+  for (const t of transactions) {
+    if (monthKey(t.date) === thisMonthKey && t.amount > 0) income += t.amount;
+  }
+  const savings = income - cur.total;
+  if (income > 0 && savings > 0) list.push(`¡Bien! Llevas ahorrado ${formatCLP(savings)} este mes.`);
+
+  return list.slice(0, 3);
+}

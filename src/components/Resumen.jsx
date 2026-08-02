@@ -1,13 +1,16 @@
+import { useRef, useState } from "react";
+import { toPng } from "html-to-image";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Legend,
 } from "recharts";
-import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3 } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3, ImageDown, Loader2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
 import { Panel, EmptyState, StatCard } from "./Shared.jsx";
 import { SpendHeatmap } from "./Heatmap.jsx";
 import { HeroStat } from "./HeroStat.jsx";
+import { Insights } from "./Insights.jsx";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 
 const MONTH_NAMES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -17,9 +20,50 @@ function fmtMonth(m) {
   return `${MONTH_NAMES[parseInt(mo, 10) - 1]} ${y}`;
 }
 
-export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions, heroStat }) {
+export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast }) {
+  const captureRef = useRef(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!captureRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const bg = getComputedStyle(document.documentElement).getPropertyValue("--color-bg").trim();
+      const dataUrl = await toPng(captureRef.current, { backgroundColor: bg || undefined, pixelRatio: 2, skipFonts: true });
+      const link = document.createElement("a");
+      link.download = `resumen-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (e) {
+      console.error(e);
+      pushToast?.("error", "No se pudo generar la imagen del resumen.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
+      {hasTransactions && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
+              border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.textMuted,
+              fontSize: 12, cursor: exporting ? "default" : "pointer", opacity: exporting ? 0.7 : 1,
+            }}
+          >
+            {exporting ? <Loader2 size={13} className="spin" /> : <ImageDown size={13} />}
+            {exporting ? "Generando…" : "Guardar resumen"}
+          </button>
+        </div>
+      )}
+
+      <div ref={captureRef}>
+      {hasTransactions && <Insights items={insights} />}
+
       {hasTransactions && heroStat && (
         <ErrorBoundary>
           <HeroStat {...heroStat} />
@@ -101,6 +145,7 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, 
           <SpendHeatmap dailySpend={dailySpend} hasTransactions={hasTransactions} />
         </ErrorBoundary>
       </Panel>
+      </div>
     </div>
   );
 }

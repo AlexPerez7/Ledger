@@ -154,7 +154,7 @@ select:focus-visible {
     font-size: 15px !important;
   }
   .tx-actions {
-    grid-area: actions;
+    display: none !important;
   }
 
   .toast-stack {
@@ -237,6 +237,40 @@ select:focus-visible {
 
 .tx-row-wrap.tx-row-enter {
   animation: row-in 220ms ease-out;
+}
+
+/* ---- swipe-to-action (mobile): editar/borrar detrás de la fila ---------- */
+
+.tx-swipe-clip {
+  position: relative;
+  overflow: hidden;
+}
+
+.tx-swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+}
+
+.tx-swipe-btn {
+  width: 64px;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+}
+
+.tx-swipe-edit {
+  background: var(--color-accent);
+}
+
+.tx-swipe-delete {
+  background: var(--color-expense);
 }
 
 @keyframes row-in {
