@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react
 import { TOKENS, DEFAULT_CATEGORIES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "./lib/constants.js";
 import { storage } from "./lib/storage.js";
 import { useToasts } from "./lib/useToasts.js";
+import { readFileWithProgress } from "./lib/readFile.js";
 import {
   autoCategory, applyMerchantRules, parseClpNumber, parseBankDate,
   makeKey, monthKey, uid,
@@ -102,10 +103,11 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   // ---- import xls -----------------------------------------------------------
   const handleFile = useCallback(
     async (file) => {
-      const toastId = pushToast("loading", "Leyendo archivo…");
+      const toastId = pushToast("loading", "Leyendo archivo…", 0);
       try {
         const XLSX = await import("xlsx"); // solo se descarga al importar un archivo
-        const buf = await file.arrayBuffer();
+        const buf = await readFileWithProgress(file, (pct) => updateToast(toastId, "loading", "Leyendo archivo…", pct));
+        updateToast(toastId, "loading", "Procesando movimientos…");
         const wb = XLSX.read(buf, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
@@ -318,6 +320,41 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     return map;
   }, [transactions]);
 
+  // "hero" del dashboard: gasto acumulado del mes real (no del filtro) hasta
+  // hoy, comparado contra el ritmo promedio hasta el mismo día-del-mes en
+  // los últimos meses con datos — siempre en base al calendario real, igual
+  // que dailySpend/byMonth, independiente del pill de mes seleccionado arriba.
+  const heroStat = useMemo(() => {
+    const now = new Date();
+    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const thisMonthKey = todayISO.slice(0, 7);
+    const dayOfMonth = now.getDate();
+
+    let spentSoFar = 0;
+    for (const [date, amt] of Object.entries(dailySpend)) {
+      if (date.slice(0, 7) === thisMonthKey && date <= todayISO) spentSoFar += amt;
+    }
+
+    const priorMonths = Array.from(new Set(transactions.map((t) => monthKey(t.date))))
+      .filter((mk) => mk && mk < thisMonthKey)
+      .sort()
+      .slice(-3);
+
+    let typicalPace = null;
+    if (priorMonths.length > 0) {
+      const sums = priorMonths.map((mk) => {
+        let sum = 0;
+        for (const [date, amt] of Object.entries(dailySpend)) {
+          if (date.slice(0, 7) === mk && Number(date.slice(8, 10)) <= dayOfMonth) sum += amt;
+        }
+        return sum;
+      });
+      typicalPace = sums.reduce((a, b) => a + b, 0) / sums.length;
+    }
+
+    return { spentSoFar, typicalPace, dayOfMonth, monthKey: thisMonthKey };
+  }, [dailySpend, transactions]);
+
   const reconcileStats = useMemo(() => {
     if (!currentMonth) return null;
     const inMonth = transactions.filter((t) => monthKey(t.date) === currentMonth);
@@ -370,7 +407,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             <Suspense fallback={<div style={{ color: TOKENS.textFaint, padding: "40px 0", textAlign: "center", fontSize: 12.5 }}>Cargando…</div>}>
               <Resumen
                 stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
-                dailySpend={dailySpend} hasTransactions={transactions.length > 0}
+                dailySpend={dailySpend} hasTransactions={transactions.length > 0} heroStat={heroStat}
               />
             </Suspense>
           </ErrorBoundary>

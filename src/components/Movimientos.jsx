@@ -106,11 +106,21 @@ export function Movimientos({
 
 function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
   const [editing, setEditing] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const cat = getCat(t.category);
   const CatIcon = cat.icon;
 
+  // espera a que termine la animación de colapso antes de sacarla del estado
+  const handleDelete = () => {
+    setLeaving(true);
+    setTimeout(() => onDelete(t.id), 220);
+  };
+
   return (
     <div style={{ borderBottom: isLast ? "none" : `1px solid ${TOKENS.border}` }}>
+      <div
+        className={`tx-row-wrap tx-row-enter${leaving ? " tx-row-leaving" : ""}`}
+      >
       <div className="txrow-grid" style={{ display: "grid", gridTemplateColumns: "84px 1fr 170px 130px auto", alignItems: "center", gap: 10, padding: "11px 16px" }}>
         <div className="tx-date mono" style={{ fontSize: 11.5, color: TOKENS.textFaint }}>{formatDateDisplay(t.date)}</div>
         <div className="tx-desc" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -141,8 +151,9 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           <button onClick={() => setEditing((v) => !v)} aria-label={editing ? "Cerrar edición" : "Editar movimiento"} title="Editar" style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 4 }}>
             <Pencil size={13} />
           </button>
-          <ConfirmDeleteButton onConfirm={() => onDelete(t.id)} text="¿Eliminar este movimiento?" title="Eliminar movimiento" size={13} />
+          <ConfirmDeleteButton onConfirm={handleDelete} text="¿Eliminar este movimiento?" title="Eliminar movimiento" size={13} />
         </div>
+      </div>
       </div>
       {editing && <TxEditPanel t={t} categories={categories} onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }} onCancel={() => setEditing(false)} />}
     </div>

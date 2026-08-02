@@ -7,6 +7,7 @@ import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
 import { Panel, EmptyState, StatCard } from "./Shared.jsx";
 import { SpendHeatmap } from "./Heatmap.jsx";
+import { HeroStat } from "./HeroStat.jsx";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 
 const MONTH_NAMES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -16,9 +17,15 @@ function fmtMonth(m) {
   return `${MONTH_NAMES[parseInt(mo, 10) - 1]} ${y}`;
 }
 
-export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions }) {
+export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions, heroStat }) {
   return (
     <div>
+      {hasTransactions && heroStat && (
+        <ErrorBoundary>
+          <HeroStat {...heroStat} />
+        </ErrorBoundary>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
         <StatCard
           label="Saldo (último dato del banco)"

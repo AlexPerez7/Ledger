@@ -220,3 +220,44 @@ select:focus-visible {
     transform: rotate(360deg);
   }
 }
+
+/* ---- filas de movimientos: entrada al aparecer, colapso al borrar -------- */
+
+.tx-row-wrap {
+  overflow: hidden;
+  max-height: 220px;
+  opacity: 1;
+  transition: max-height 220ms ease-in, opacity 180ms ease-in;
+}
+
+.tx-row-wrap.tx-row-leaving {
+  max-height: 0;
+  opacity: 0;
+}
+
+.tx-row-wrap.tx-row-enter {
+  animation: row-in 220ms ease-out;
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast-leaving,
+  .tx-row-wrap.tx-row-enter,
+  .spin {
+    animation: none !important;
+  }
+  .tx-row-wrap {
+    transition: none !important;
+  }
+}

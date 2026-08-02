@@ -32,15 +32,17 @@ export function EmptyState({ icon: Icon, title, text, action }) {
   );
 }
 
+// secundarias a propósito (fontSize/padding más chicos que antes): el hero
+// number de arriba es el que debe destacar, estas son contexto de apoyo.
 export function StatCard({ label, value, sub, icon: Icon, accent }) {
   return (
-    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: "16px 18px" }}>
+    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: "13px 16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ fontSize: 11.5, color: TOKENS.textMuted, marginBottom: 8, lineHeight: 1.4 }}>{label}</div>
-        {Icon && <Icon size={14} color={accent} />}
+        <div style={{ fontSize: 11, color: TOKENS.textMuted, marginBottom: 6, lineHeight: 1.4 }}>{label}</div>
+        {Icon && <Icon size={13} color={accent} />}
       </div>
-      <div className="mono" style={{ fontSize: 22, fontWeight: 600, color: accent }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: TOKENS.textFaint, marginTop: 4 }}>{sub}</div>}
+      <div className="mono" style={{ fontSize: 17, fontWeight: 600, color: accent }}>{value}</div>
+      {sub && <div style={{ fontSize: 10.5, color: TOKENS.textFaint, marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }

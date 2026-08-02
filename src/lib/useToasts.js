@@ -25,15 +25,15 @@ export function useToasts() {
     timers.current[id] = setTimeout(() => dismiss(id), LIFESPAN[type] ?? LIFESPAN.ok);
   }, [dismiss]);
 
-  const push = useCallback((type, text) => {
+  const push = useCallback((type, text, progress = null) => {
     const id = ++seq;
-    setToasts((list) => [...list, { id, type, text }]);
+    setToasts((list) => [...list, { id, type, text, progress }]);
     scheduleAutoDismiss(id, type);
     return id;
   }, [scheduleAutoDismiss]);
 
-  const update = useCallback((id, type, text) => {
-    setToasts((list) => list.map((t) => (t.id === id ? { ...t, type, text, leaving: false } : t)));
+  const update = useCallback((id, type, text, progress = null) => {
+    setToasts((list) => list.map((t) => (t.id === id ? { ...t, type, text, progress, leaving: false } : t)));
     scheduleAutoDismiss(id, type);
   }, [scheduleAutoDismiss]);
 
