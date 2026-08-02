@@ -24,17 +24,21 @@ export const TOKENS = {
   accent: "var(--color-accent)",
 };
 
+// excludeFromExpense: true = esta categoría no cuenta como gasto en stats,
+// heatmap, gráficos ni en el hero — pensado para transferencias entre tus
+// propias cuentas (ahorro, etc.), que salen de la cuenta corriente pero no
+// son consumo real.
 export const DEFAULT_CATEGORIES = [
-  { id: "ingreso", label: "Ingresos", color: "#3FBF8F", icon: "TrendingUp" },
-  { id: "comida", label: "Comida y delivery", color: "#E8654F", icon: "Utensils" },
-  { id: "transporte", label: "Transporte", color: "#F0B94A", icon: "Car" },
-  { id: "suscripciones", label: "Suscripciones y juegos", color: "#9B87C4", icon: "Gamepad2" },
-  { id: "compras", label: "Compras", color: "#5B9BD5", icon: "ShoppingBag" },
-  { id: "servicios", label: "Servicios y cuentas", color: "#D98E52", icon: "Receipt" },
-  { id: "salud", label: "Salud y cuidado personal", color: "#6FCF97", icon: "HeartPulse" },
-  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight" },
-  { id: "efectivo", label: "Retiro de efectivo", color: "#A0A8B4", icon: "Banknote" },
-  { id: "otros", label: "Otros", color: "#57646F", icon: "Shapes" },
+  { id: "ingreso", label: "Ingresos", color: "#3FBF8F", icon: "TrendingUp", excludeFromExpense: false },
+  { id: "comida", label: "Comida y delivery", color: "#E8654F", icon: "Utensils", excludeFromExpense: false },
+  { id: "transporte", label: "Transporte", color: "#F0B94A", icon: "Car", excludeFromExpense: false },
+  { id: "suscripciones", label: "Suscripciones y juegos", color: "#9B87C4", icon: "Gamepad2", excludeFromExpense: false },
+  { id: "compras", label: "Compras", color: "#5B9BD5", icon: "ShoppingBag", excludeFromExpense: false },
+  { id: "servicios", label: "Servicios y cuentas", color: "#D98E52", icon: "Receipt", excludeFromExpense: false },
+  { id: "salud", label: "Salud y cuidado personal", color: "#6FCF97", icon: "HeartPulse", excludeFromExpense: false },
+  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight", excludeFromExpense: true },
+  { id: "efectivo", label: "Retiro de efectivo", color: "#A0A8B4", icon: "Banknote", excludeFromExpense: false },
+  { id: "otros", label: "Otros", color: "#57646F", icon: "Shapes", excludeFromExpense: false },
 ];
 
 export const DEFAULT_CATEGORY_ICON = Shapes;

@@ -223,12 +223,16 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     (label) => {
       const id = "cat_" + uid();
       const color = PALETTE[categories.length % PALETTE.length];
-      persistCats([...categories, { id, label, color, icon: "Shapes" }]);
+      persistCats([...categories, { id, label, color, icon: "Shapes", excludeFromExpense: false }]);
     },
     [categories, persistCats]
   );
   const renameCategory = useCallback((id, label) => { persistCats(categories.map((c) => (c.id === id ? { ...c, label } : c))); }, [categories, persistCats]);
   const changeCategoryIcon = useCallback((id, icon) => { persistCats(categories.map((c) => (c.id === id ? { ...c, icon } : c))); }, [categories, persistCats]);
+  const toggleCategoryExpense = useCallback(
+    (id) => { persistCats(categories.map((c) => (c.id === id ? { ...c, excludeFromExpense: !c.excludeFromExpense } : c))); },
+    [categories, persistCats]
+  );
   const deleteCategory = useCallback(
     (id) => {
       persistCats(categories.filter((c) => c.id !== id));
@@ -285,20 +289,29 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   }, [monthTx, catFilter, search]);
 
+  // categorías marcadas "no cuenta como gasto" (ej. transferencias a tus
+  // propias cuentas) — se excluyen de todo cálculo de gasto, pero siguen
+  // apareciendo normalmente en la lista de movimientos.
+  const excludedCategoryIds = useMemo(
+    () => new Set(categories.filter((c) => c.excludeFromExpense).map((c) => c.id)),
+    [categories]
+  );
+  const isRealExpense = useCallback((t) => t.amount < 0 && !excludedCategoryIds.has(t.category), [excludedCategoryIds]);
+
   const stats = useMemo(() => {
     const income = monthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-    const expense = monthTx.filter((t) => t.amount < 0).reduce((s, t) => s + t.amount, 0);
+    const expense = monthTx.filter(isRealExpense).reduce((s, t) => s + t.amount, 0);
     const lastBank = [...transactions].filter((t) => t.source === "bank").sort((a, b) => (a.date > b.date ? -1 : 1))[0];
     return { income, expense, balance: income + expense, lastKnown: lastBank };
-  }, [monthTx, transactions]);
+  }, [monthTx, transactions, isRealExpense]);
 
   const byCategory = useMemo(() => {
     const map = {};
-    monthTx.filter((t) => t.amount < 0).forEach((t) => { map[t.category] = (map[t.category] || 0) + Math.abs(t.amount); });
+    monthTx.filter(isRealExpense).forEach((t) => { map[t.category] = (map[t.category] || 0) + Math.abs(t.amount); });
     return Object.entries(map)
       .map(([id, value]) => ({ id, name: getCat(id).label, value, color: getCat(id).color, icon: getCat(id).icon }))
       .sort((a, b) => b.value - a.value);
-  }, [monthTx, getCat]);
+  }, [monthTx, getCat, isRealExpense]);
 
   const byMonth = useMemo(() => {
     const map = {};
@@ -306,19 +319,19 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       const mk = monthKey(t.date);
       if (!mk) return;
       if (!map[mk]) map[mk] = { month: mk, ingresos: 0, gastos: 0 };
-      if (t.amount > 0) map[mk].ingresos += t.amount; else map[mk].gastos += Math.abs(t.amount);
+      if (t.amount > 0) map[mk].ingresos += t.amount; else if (isRealExpense(t)) map[mk].gastos += Math.abs(t.amount);
     });
     return Object.values(map).sort((a, b) => (a.month > b.month ? 1 : -1)).slice(-6);
-  }, [transactions]);
+  }, [transactions, isRealExpense]);
 
   const dailySpend = useMemo(() => {
     const map = {};
     transactions.forEach((t) => {
-      if (t.amount >= 0 || !t.date) return;
+      if (!t.date || !isRealExpense(t)) return;
       map[t.date] = (map[t.date] || 0) + Math.abs(t.amount);
     });
     return map;
-  }, [transactions]);
+  }, [transactions, isRealExpense]);
 
   // "hero" del dashboard: TODO lo gastado con fecha en el mes real (no del
   // filtro de arriba), sin importar el día — el banco a veces le pone fecha
@@ -404,7 +417,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         <MonthBar months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter} />
 
         {showCatManager && (
-          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onClose={() => setShowCatManager(false)} />
+          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onToggleExpense={toggleCategoryExpense} onClose={() => setShowCatManager(false)} />
         )}
 
         {tab === "resumen" && (

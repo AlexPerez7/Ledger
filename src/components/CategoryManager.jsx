@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { TOKENS, ICONS, ICON_NAMES, resolveCategoryIcon } from "../lib/constants.js";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 
-export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onClose }) {
+export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onToggleExpense, onClose }) {
   const [newLabel, setNewLabel] = useState("");
   const [pickerFor, setPickerFor] = useState(null);
 
@@ -45,6 +45,15 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   title="Eliminar (los movimientos pasan a Otros)"
                 />
               </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, marginLeft: 30, fontSize: 11, color: TOKENS.textFaint, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={!c.excludeFromExpense}
+                  onChange={() => onToggleExpense(c.id)}
+                  style={{ margin: 0, cursor: "pointer" }}
+                />
+                Cuenta como gasto en resúmenes y gráficos
+              </label>
               {pickerOpen && (
                 <div style={{
                   display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, padding: 10,
