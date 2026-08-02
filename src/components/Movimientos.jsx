@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2 } from "lucide-react";
+import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2, Trash2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
@@ -19,6 +19,7 @@ const actionBtnStyle = {
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile, pushToast,
+  onBulkDelete, onBulkChangeCategory,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -50,6 +51,33 @@ export function Movimientos({
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = someVisibleSelected && !allVisibleSelected;
   }, [someVisibleSelected, allVisibleSelected]);
+
+  // acciones masivas: onBulkDelete/onBulkChangeCategory ya hablan con
+  // Supabase (vía persistTx en App.jsx) y devuelven si funcionó o no —
+  // acá solo se limpia la selección cuando la acción realmente terminó bien.
+  const handleBulkDelete = async () => {
+    const count = selectedIds.length;
+    const ok = await onBulkDelete(selectedIds);
+    if (ok) {
+      pushToast?.("ok", `${count} movimiento${count === 1 ? "" : "s"} eliminado${count === 1 ? "" : "s"}.`);
+      setSelectedIds([]);
+    } else {
+      pushToast?.("error", "No se pudo borrar. Revisa tu conexión e inténtalo de nuevo.");
+    }
+    return ok;
+  };
+
+  const handleBulkCategoryChange = async (categoryId) => {
+    const count = selectedIds.length;
+    const ok = await onBulkChangeCategory(selectedIds, categoryId);
+    if (ok) {
+      pushToast?.("ok", `Categoría actualizada en ${count} movimiento${count === 1 ? "" : "s"}.`);
+      setSelectedIds([]);
+    } else {
+      pushToast?.("error", "No se pudo cambiar la categoría. Revisa tu conexión e inténtalo de nuevo.");
+    }
+    return ok;
+  };
 
   const handleExportBackup = async () => {
     if (exportingBackup) return;
@@ -212,6 +240,117 @@ export function Movimientos({
           ))
         )}
       </div>
+
+      {selectedIds.length > 0 && (
+        <BulkActionsBar
+          count={selectedIds.length}
+          categories={categories}
+          onDelete={handleBulkDelete}
+          onChangeCategory={handleBulkCategoryChange}
+          onClose={() => setSelectedIds([])}
+        />
+      )}
+    </div>
+  );
+}
+
+// Barra flotante contextual: solo existe mientras hay algo seleccionado.
+// "Cambiar categoría" es un <select> normal (sin opción propia elegible) que
+// dispara la acción apenas el usuario elige una categoría, en vez de un botón
+// + dropdown separados — menos clics, mismo resultado.
+function BulkActionsBar({ count, categories, onDelete, onChangeCategory, onClose }) {
+  const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const handleDeleteClick = async () => {
+    setBusy(true);
+    try {
+      await onDelete();
+    } finally {
+      setBusy(false);
+      setConfirmingDelete(false);
+    }
+  };
+
+  const handleCategorySelect = async (e) => {
+    const categoryId = e.target.value;
+    if (!categoryId) return;
+    setBusy(true);
+    try {
+      await onChangeCategory(categoryId);
+    } finally {
+      setBusy(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", left: "50%", bottom: 20, transform: "translateX(-50%)", zIndex: 1500,
+        display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12,
+        background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`,
+        boxShadow: "0 10px 28px rgba(0,0,0,0.4)", maxWidth: "calc(100vw - 28px)", flexWrap: "wrap", justifyContent: "center",
+      }}
+    >
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: TOKENS.text, whiteSpace: "nowrap" }}>
+        {count} seleccionado{count === 1 ? "" : "s"}
+      </span>
+
+      <select
+        onChange={handleCategorySelect}
+        disabled={busy}
+        defaultValue=""
+        aria-label="Cambiar categoría de los movimientos seleccionados"
+        style={{ padding: "7px 9px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}
+      >
+        <option value="" disabled>Cambiar categoría…</option>
+        {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+      </select>
+
+      {confirmingDelete ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 12, color: TOKENS.textMuted }}>¿Seguro?</span>
+          <button
+            onClick={handleDeleteClick}
+            disabled={busy}
+            style={{
+              display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 7, border: "none",
+              background: TOKENS.expense, color: "#fff", fontSize: 12, fontWeight: 600, cursor: busy ? "default" : "pointer",
+            }}
+          >
+            {busy ? <Loader2 size={12} className="spin" /> : "Confirmar"}
+          </button>
+          <button
+            onClick={() => setConfirmingDelete(false)}
+            disabled={busy}
+            style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12, cursor: "pointer" }}
+          >
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirmingDelete(true)}
+          disabled={busy}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, border: "none",
+            background: "var(--tint-expense)", color: TOKENS.expense, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          <Trash2 size={13} /> Borrar seleccionados
+        </button>
+      )}
+
+      <button
+        onClick={onClose}
+        disabled={busy}
+        aria-label="Cerrar selección"
+        title="Cerrar selección"
+        style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer", padding: 4 }}
+      >
+        <X size={15} />
+      </button>
     </div>
   );
 }

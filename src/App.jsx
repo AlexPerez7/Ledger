@@ -62,6 +62,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     } else {
       setSyncError(null);
     }
+    return !!res;
   }, [transactions]);
   const persistCats = useCallback(async (next) => {
     const prev = categories;
@@ -205,6 +206,25 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   );
 
   const deleteTransaction = useCallback((id) => { persistTx(transactions.filter((t) => t.id !== id)); }, [transactions, persistTx]);
+
+  // acciones masivas (bulk): mismo camino que cualquier otro cambio de
+  // transactions — persistTx ya diffea contra Supabase (borra lo que falta,
+  // upsertea lo que cambió) y hace rollback si el guardado falla, así que
+  // acá solo arma el array `next` y devuelve si funcionó o no.
+  const bulkDeleteTransactions = useCallback(
+    async (ids) => {
+      const idSet = new Set(ids);
+      return persistTx(transactions.filter((t) => !idSet.has(t.id)));
+    },
+    [transactions, persistTx]
+  );
+  const bulkChangeCategory = useCallback(
+    async (ids, categoryId) => {
+      const idSet = new Set(ids);
+      return persistTx(transactions.map((t) => (idSet.has(t.id) ? { ...t, category: categoryId } : t)));
+    },
+    [transactions, persistTx]
+  );
 
   // edita un movimiento y, opcionalmente, recuerda una regla de comercio que
   // se aplica retroactivamente a todo lo que ya coincida
@@ -462,6 +482,8 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 addManual={addManual}
                 handleFile={handleFile}
                 pushToast={pushToast}
+                onBulkDelete={bulkDeleteTransactions}
+                onBulkChangeCategory={bulkChangeCategory}
               />
             </Suspense>
           </ErrorBoundary>
