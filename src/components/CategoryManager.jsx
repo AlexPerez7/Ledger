@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { TOKENS, ICONS, ICON_NAMES, resolveCategoryIcon } from "../lib/constants.js";
+import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 
 export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onClose }) {
   const [newLabel, setNewLabel] = useState("");
@@ -35,9 +36,12 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   onBlur={(e) => { if (e.target.value.trim() && e.target.value !== c.label) onRename(c.id, e.target.value.trim()); }}
                   style={{ flex: 1, padding: "6px 9px", borderRadius: 6, border: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, color: TOKENS.text, fontSize: 12.5 }}
                 />
-                <button onClick={() => onDelete(c.id)} style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }} title="Eliminar (los movimientos pasan a Otros)">
-                  <Trash2 size={13} />
-                </button>
+                <ConfirmDeleteButton
+                  onConfirm={() => onDelete(c.id)}
+                  text={`Los movimientos en "${c.label}" van a pasar a Otros. ¿Eliminar la categoría?`}
+                  size={13}
+                  title="Eliminar (los movimientos pasan a Otros)"
+                />
               </div>
               {pickerOpen && (
                 <div style={{

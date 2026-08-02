@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Upload, Plus, Check, Pencil, Trash2, X, Inbox, SearchX, CalendarX2 } from "lucide-react";
+import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay, suggestMatchKey } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
+import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
@@ -140,9 +141,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           <button onClick={() => setEditing((v) => !v)} style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 4 }}>
             <Pencil size={13} />
           </button>
-          <button onClick={() => onDelete(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: TOKENS.textFaint, padding: 4 }}>
-            <Trash2 size={13} />
-          </button>
+          <ConfirmDeleteButton onConfirm={() => onDelete(t.id)} text="¿Eliminar este movimiento?" size={13} />
         </div>
       </div>
       {editing && <TxEditPanel t={t} categories={categories} onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }} onCancel={() => setEditing(false)} />}
