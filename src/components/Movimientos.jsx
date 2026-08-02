@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Upload, Plus, Check, Pencil, Trash2, X } from "lucide-react";
+import { Upload, Plus, Check, Pencil, Trash2, X, Inbox, SearchX, CalendarX2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay, suggestMatchKey } from "../lib/utils.js";
-import { EmptyNote, FieldInput } from "./Shared.jsx";
+import { EmptyState, FieldInput } from "./Shared.jsx";
 
 export function Movimientos({
-  filteredTx, categories, getCat, search, setSearch, catFilter, setCatFilter,
+  filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile, importMsg,
 }) {
   const [dragOver, setDragOver] = useState(false);
@@ -76,7 +76,35 @@ export function Movimientos({
       </div>
 
       <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, overflow: "hidden" }}>
-        {filteredTx.length === 0 ? <EmptyNote text="No hay movimientos que coincidan." /> : (
+        {filteredTx.length === 0 ? (
+          !hasTransactions ? (
+            <EmptyState
+              icon={Inbox}
+              title="Todavía no hay movimientos"
+              text="Sube el .xls de tu banco o agrega un gasto o ingreso manual (arriba) para empezar a ver tus finanzas acá."
+            />
+          ) : search || catFilter !== "all" ? (
+            <EmptyState
+              icon={SearchX}
+              title="Sin resultados"
+              text="Ningún movimiento coincide con tu búsqueda o filtro de categoría."
+              action={
+                <button onClick={() => { setSearch(""); setCatFilter("all"); }} style={{
+                  padding: "7px 14px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: "transparent",
+                  color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
+                }}>
+                  Limpiar filtros
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={CalendarX2}
+              title="Sin movimientos este mes"
+              text="Prueba seleccionando 'Todo' en los meses de arriba, o sube el reporte del banco para este período."
+            />
+          )
+        ) : (
           filteredTx.map((t, i) => (
             <TxRow key={t.id} t={t} isLast={i === filteredTx.length - 1} categories={categories} getCat={getCat} saveTxEdit={saveTxEdit} onDelete={deleteTransaction} />
           ))

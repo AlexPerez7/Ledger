@@ -16,6 +16,22 @@ export function EmptyNote({ text }) {
   return <div style={{ color: TOKENS.textFaint, fontSize: 12.5, padding: "30px 0", textAlign: "center" }}>{text}</div>;
 }
 
+export function EmptyState({ icon: Icon, title, text, action }) {
+  return (
+    <div style={{ textAlign: "center", padding: "40px 20px" }}>
+      <div style={{
+        width: 44, height: 44, borderRadius: 12, background: TOKENS.surfaceAlt, display: "flex",
+        alignItems: "center", justifyContent: "center", margin: "0 auto 14px",
+      }}>
+        <Icon size={20} color={TOKENS.textFaint} />
+      </div>
+      <div className="display" style={{ fontSize: 14, fontWeight: 600, color: TOKENS.text, marginBottom: 5 }}>{title}</div>
+      <div style={{ fontSize: 12.5, color: TOKENS.textFaint, maxWidth: 320, margin: "0 auto", lineHeight: 1.5 }}>{text}</div>
+      {action && <div style={{ marginTop: 16 }}>{action}</div>}
+    </div>
+  );
+}
+
 export function StatCard({ label, value, sub, icon: Icon, accent }) {
   return (
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: "16px 18px" }}>

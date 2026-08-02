@@ -333,6 +333,7 @@ export default function App({ onSignOut }) {
         {tab === "movimientos" && (
           <Movimientos
             filteredTx={filteredTx}
+            hasTransactions={transactions.length > 0}
             categories={categories}
             getCat={getCat}
             search={search} setSearch={setSearch}

@@ -2,10 +2,10 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Legend,
 } from "recharts";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
-import { Panel, EmptyNote, StatCard } from "./Shared.jsx";
+import { Panel, EmptyState, StatCard } from "./Shared.jsx";
 
 const MONTH_NAMES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmtMonth(m) {
@@ -31,7 +31,9 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth }) {
 
       <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Panel title={`Gasto por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
-          {byCategory.length === 0 ? <EmptyNote text="Sin gastos registrados en este período." /> : (
+          {byCategory.length === 0 ? (
+            <EmptyState icon={PieChartIcon} title="Sin gastos este período" text="Los gastos categorizados van a aparecer acá apenas importes o agregues movimientos." />
+          ) : (
             <div className="category-chart-row" style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div className="category-chart-pie" style={{ width: "55%", flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height={220}>
@@ -67,7 +69,9 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth }) {
         </Panel>
 
         <Panel title="Últimos 6 meses">
-          {byMonth.length === 0 ? <EmptyNote text="Importa movimientos para ver la evolución." /> : (
+          {byMonth.length === 0 ? (
+            <EmptyState icon={BarChart3} title="Sin historial todavía" text="Importa movimientos del banco para ver cómo evoluciona tu gasto mes a mes." />
+          ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={byMonth}>
                 <CartesianGrid strokeDasharray="3 3" stroke={TOKENS.border} vertical={false} />

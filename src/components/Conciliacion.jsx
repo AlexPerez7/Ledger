@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, AlertTriangle, ScanLine, Info } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
-import { Panel, EmptyNote } from "./Shared.jsx";
+import { Panel, EmptyNote, EmptyState } from "./Shared.jsx";
 
 const MONTH_NAMES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 function fmtMonth(m) {
@@ -14,7 +14,15 @@ function fmtMonth(m) {
 export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth }) {
   const [result, setResult] = useState(null);
 
-  if (!currentMonth || !reconcileStats) return <EmptyNote text="Importa movimientos del banco para poder conciliar un mes." />;
+  if (!currentMonth || !reconcileStats) {
+    return (
+      <EmptyState
+        icon={ScanLine}
+        title="Nada que conciliar todavía"
+        text="Importa movimientos del banco para poder revisar qué coincide con tus registros manuales."
+      />
+    );
+  }
 
   const { confirmed, pendingNoReport, pendingMismatch, bankOnly, bankExists } = reconcileStats;
 
