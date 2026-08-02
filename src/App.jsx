@@ -463,6 +463,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 showManualForm={showManualForm} setShowManualForm={setShowManualForm}
                 addManual={addManual}
                 handleFile={handleFile}
+                pushToast={pushToast}
               />
             </Suspense>
           </ErrorBoundary>

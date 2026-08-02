@@ -1,22 +1,53 @@
 import { useState } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2 } from "lucide-react";
+import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2 } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay, suggestMatchKey } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { useIsMobile } from "../lib/useIsMobile.js";
+import { exportBackup } from "../lib/exportBackup.js";
 
 const SWIPE_ACTION_WIDTH = 128; // ancho de los 2 botones (editar + borrar) revelados al deslizar
 
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
-  saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile,
+  saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile, pushToast,
 }) {
   const [dragOver, setDragOver] = useState(false);
+  const [exportingBackup, setExportingBackup] = useState(false);
+
+  const handleExportBackup = async () => {
+    if (exportingBackup) return;
+    setExportingBackup(true);
+    try {
+      await exportBackup();
+    } catch (e) {
+      console.error(e);
+      pushToast?.("error", "No se pudo generar el respaldo. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setExportingBackup(false);
+    }
+  };
 
   return (
     <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+        <button
+          onClick={handleExportBackup}
+          disabled={exportingBackup}
+          title="Descarga un .json con todos tus movimientos y categorías"
+          style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
+            border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.textMuted,
+            fontSize: 12, cursor: exportingBackup ? "default" : "pointer", opacity: exportingBackup ? 0.7 : 1,
+          }}
+        >
+          {exportingBackup ? <Loader2 size={13} className="spin" /> : <Download size={13} />}
+          {exportingBackup ? "Generando respaldo…" : "Descargar respaldo"}
+        </button>
+      </div>
+
       <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
         <label
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
