@@ -2,6 +2,12 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { TOKENS, ICONS, ICON_NAMES, resolveCategoryIcon } from "../lib/constants.js";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
+import { ToggleSwitch } from "./Shared.jsx";
+
+// Los ingresos son montos positivos: el filtro de gasto (t.amount < 0) ya los
+// excluye siempre, sin importar este flag — mostrar el interruptor ahí sería
+// un control que no hace nada, así que se deshabilita para esa categoría.
+const INCOME_CATEGORY_ID = "ingreso";
 
 export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onToggleExpense, onClose }) {
   const [newLabel, setNewLabel] = useState("");
@@ -9,14 +15,20 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
 
   return (
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-        <div className="display" style={{ fontSize: 13.5, fontWeight: 600 }}>Categorías</div>
-        <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+        <div>
+          <div className="display" style={{ fontSize: 13.5, fontWeight: 600 }}>Categorías</div>
+          <div style={{ fontSize: 11, color: TOKENS.textFaint, marginTop: 3, lineHeight: 1.4, maxWidth: 320 }}>
+            El interruptor de cada fila define si esa categoría cuenta como gasto en resúmenes y gráficos.
+          </div>
+        </div>
+        <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer", flexShrink: 0 }}><X size={16} /></button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
         {categories.map((c) => {
           const CatIcon = resolveCategoryIcon(c);
           const pickerOpen = pickerFor === c.id;
+          const isIncome = c.id === INCOME_CATEGORY_ID;
           return (
             <div key={c.id}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -38,6 +50,13 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   onBlur={(e) => { if (e.target.value.trim() && e.target.value !== c.label) onRename(c.id, e.target.value.trim()); }}
                   style={{ flex: 1, padding: "6px 9px", borderRadius: 6, border: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, color: TOKENS.text, fontSize: 12.5 }}
                 />
+                <ToggleSwitch
+                  checked={!c.excludeFromExpense}
+                  onChange={() => onToggleExpense(c.id)}
+                  disabled={isIncome}
+                  ariaLabel={`${c.label} cuenta como gasto`}
+                  title={isIncome ? "Los ingresos nunca cuentan como gasto" : "Cuenta como gasto en resúmenes y gráficos"}
+                />
                 <ConfirmDeleteButton
                   onConfirm={() => onDelete(c.id)}
                   text={`Los movimientos en "${c.label}" van a pasar a Otros. ¿Eliminar la categoría?`}
@@ -45,15 +64,6 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   title="Eliminar (los movimientos pasan a Otros)"
                 />
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, marginLeft: 30, fontSize: 11, color: TOKENS.textFaint, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={!c.excludeFromExpense}
-                  onChange={() => onToggleExpense(c.id)}
-                  style={{ margin: 0, cursor: "pointer" }}
-                />
-                Cuenta como gasto en resúmenes y gráficos
-              </label>
               {pickerOpen && (
                 <div style={{
                   display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, padding: 10,

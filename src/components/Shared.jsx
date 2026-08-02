@@ -60,6 +60,38 @@ export function FieldInput({ label, style, ...props }) {
   );
 }
 
+// Interruptor on/off — reemplaza a los checkboxes nativos donde se necesita
+// una afirmación/negación visualmente clara (ej. "cuenta como gasto").
+export function ToggleSwitch({ checked, onChange, disabled = false, title, ariaLabel }) {
+  const width = 34, height = 18, knob = 14, pad = 2;
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      title={title}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      style={{
+        width, height, borderRadius: height / 2, border: "none", padding: 0, position: "relative", flexShrink: 0,
+        background: checked && !disabled ? TOKENS.accent : TOKENS.border,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.45 : 1,
+        transition: "background 150ms ease",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute", top: pad, left: checked ? width - knob - pad : pad,
+          width: knob, height: knob, borderRadius: "50%", background: "#fff",
+          transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,0.35)",
+        }}
+      />
+    </button>
+  );
+}
+
 export function pillStyle(active) {
   return {
     padding: "6px 13px", borderRadius: 999, fontSize: 12.5, fontWeight: 500, cursor: "pointer",
