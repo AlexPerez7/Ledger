@@ -320,19 +320,18 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     return map;
   }, [transactions]);
 
-  // "hero" del dashboard: gasto acumulado del mes real (no del filtro) hasta
-  // hoy, comparado contra el ritmo promedio hasta el mismo día-del-mes en
-  // los últimos meses con datos — siempre en base al calendario real, igual
-  // que dailySpend/byMonth, independiente del pill de mes seleccionado arriba.
+  // "hero" del dashboard: TODO lo gastado con fecha en el mes real (no del
+  // filtro de arriba), sin importar el día — el banco a veces le pone fecha
+  // del lunes siguiente a movimientos del fin de semana, así que un cargo
+  // fechado "mañana" igual cuenta como gasto de este mes.
   const heroStat = useMemo(() => {
     const now = new Date();
-    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const thisMonthKey = todayISO.slice(0, 7);
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const dayOfMonth = now.getDate();
 
     let spentSoFar = 0;
     for (const [date, amt] of Object.entries(dailySpend)) {
-      if (date.slice(0, 7) === thisMonthKey && date <= todayISO) spentSoFar += amt;
+      if (date.slice(0, 7) === thisMonthKey) spentSoFar += amt;
     }
 
     const priorMonths = Array.from(new Set(transactions.map((t) => monthKey(t.date))))
@@ -340,16 +339,22 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       .sort()
       .slice(-3);
 
+    // "ritmo habitual": el total de cada mes anterior, escalado a lo que
+    // representaría llevar gastado a esta altura del mes (día/díasDelMes) —
+    // no depende de comparar fechas puntuales, así que no lo afecta el
+    // mismo desfase de fechas que rompía spentSoFar.
     let typicalPace = null;
     if (priorMonths.length > 0) {
-      const sums = priorMonths.map((mk) => {
-        let sum = 0;
+      const scaled = priorMonths.map((mk) => {
+        let total = 0;
         for (const [date, amt] of Object.entries(dailySpend)) {
-          if (date.slice(0, 7) === mk && Number(date.slice(8, 10)) <= dayOfMonth) sum += amt;
+          if (date.slice(0, 7) === mk) total += amt;
         }
-        return sum;
+        const [y, m] = mk.split("-").map(Number);
+        const daysInMonth = new Date(y, m, 0).getDate();
+        return (total * Math.min(dayOfMonth, daysInMonth)) / daysInMonth;
       });
-      typicalPace = sums.reduce((a, b) => a + b, 0) / sums.length;
+      typicalPace = scaled.reduce((a, b) => a + b, 0) / scaled.length;
     }
 
     return { spentSoFar, typicalPace, dayOfMonth, monthKey: thisMonthKey };
