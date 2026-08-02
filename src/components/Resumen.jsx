@@ -85,7 +85,7 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, 
       <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Panel title={`Gasto por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
           {byCategory.length === 0 ? (
-            <EmptyState icon={PieChartIcon} title="Sin gastos este período" text="Los gastos categorizados van a aparecer acá apenas importes o agregues movimientos." />
+            <EmptyState icon={PieChartIcon} title="Sin gastos este período" text="Los gastos categorizados van a aparecer aquí apenas importes o agregues movimientos." />
           ) : (
             <div className="category-chart-row" style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div className="category-chart-pie" style={{ width: "55%", flexShrink: 0 }}>

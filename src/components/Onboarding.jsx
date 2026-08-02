@@ -5,18 +5,18 @@ import { TOKENS } from "../lib/constants.js";
 const STEPS = [
   {
     icon: Upload,
-    title: "Subí tu archivo",
-    text: "Arrastra el .xls de movimientos de tu banco (o agrega un gasto a mano) para empezar a ver tus finanzas acá.",
+    title: "Sube tu archivo",
+    text: "Arrastra el .xls de movimientos de tu banco (o agrega un gasto a mano) para empezar a ver tus finanzas aquí.",
   },
   {
     icon: Tags,
     title: "Categoriza",
-    text: "Cada movimiento se categoriza solo cuando puede. Tocá el lápiz para ajustar la categoría o el nombre, y recordarlo para la próxima.",
+    text: "Cada movimiento se categoriza solo cuando puede. Toca el lápiz para ajustar la categoría o el nombre, y recordarlo para la próxima vez.",
   },
   {
     icon: CheckCircle2,
     title: "Concilia",
-    text: "Compará lo que registraste a mano con lo que reportó el banco, para asegurarte de que no falte ni sobre nada.",
+    text: "Compara lo que registraste a mano con lo que reportó el banco, para asegurarte de que no falte ni sobre nada.",
   },
 ];
 

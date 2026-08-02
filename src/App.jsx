@@ -58,7 +58,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const res = await storage.set("transactions", JSON.stringify(next));
     if (!res) {
       setTransactions(prev);
-      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, probá de nuevo.");
+      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
     } else {
       setSyncError(null);
     }
@@ -69,7 +69,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const res = await storage.set("categories", JSON.stringify(next));
     if (!res) {
       setCategories(prev);
-      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, probá de nuevo.");
+      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
     } else {
       setSyncError(null);
     }
@@ -80,7 +80,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const res = await storage.set("merchantRules", JSON.stringify(next));
     if (!res) {
       setMerchantRules(prev);
-      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, probá de nuevo.");
+      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
     } else {
       setSyncError(null);
     }

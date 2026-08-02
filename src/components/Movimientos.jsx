@@ -75,7 +75,7 @@ export function Movimientos({
             <EmptyState
               icon={Inbox}
               title="Todavía no hay movimientos"
-              text="Sube el .xls de tu banco o agrega un gasto o ingreso manual (arriba) para empezar a ver tus finanzas acá."
+              text="Sube el .xls de tu banco o agrega un gasto o ingreso manual (arriba) para empezar a ver tus finanzas aquí."
             />
           ) : search || catFilter !== "all" ? (
             <EmptyState

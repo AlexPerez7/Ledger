@@ -35,7 +35,7 @@ export function ResetPassword({ onDone }) {
         style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 28, width: "100%", maxWidth: 360 }}
       >
         <div className="display" style={{ fontSize: 17, fontWeight: 600, color: TOKENS.text, marginBottom: 4 }}>
-          Elegí una nueva contraseña
+          Elige una nueva contraseña
         </div>
         <div style={{ fontSize: 12.5, color: TOKENS.textMuted, marginBottom: 20 }}>
           Esto reemplaza tu contraseña anterior en todos tus dispositivos.
