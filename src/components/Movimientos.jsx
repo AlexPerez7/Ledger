@@ -138,10 +138,10 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete }) {
           {formatCLP(t.amount)}
         </div>
         <div className="tx-actions" style={{ display: "flex" }}>
-          <button onClick={() => setEditing((v) => !v)} style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 4 }}>
+          <button onClick={() => setEditing((v) => !v)} aria-label={editing ? "Cerrar edición" : "Editar movimiento"} title="Editar" style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 4 }}>
             <Pencil size={13} />
           </button>
-          <ConfirmDeleteButton onConfirm={() => onDelete(t.id)} text="¿Eliminar este movimiento?" size={13} />
+          <ConfirmDeleteButton onConfirm={() => onDelete(t.id)} text="¿Eliminar este movimiento?" title="Eliminar movimiento" size={13} />
         </div>
       </div>
       {editing && <TxEditPanel t={t} categories={categories} onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }} onCancel={() => setEditing(false)} />}
@@ -214,7 +214,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
     <div style={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 18 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
         <div className="display" style={{ fontSize: 13.5, fontWeight: 600 }}>Nuevo movimiento manual</div>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
+        <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {["expense", "income"].map((v) => (

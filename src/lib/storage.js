@@ -62,15 +62,26 @@ export const storage = {
     const spec = TABLES[key];
     if (!spec) return null;
     try {
-      const rows = JSON.parse(value).map(spec.toRow);
+      const items = JSON.parse(value);
 
-      const { data: existing, error: selError } = await supabase.from(spec.table).select("id");
+      const { data: existing, error: selError } = await supabase.from(spec.table).select("*");
       if (selError) throw selError;
-      const nextIds = new Set(rows.map((r) => r.id));
+      // comparamos en "forma de app" (fromRow), no la fila cruda de la DB:
+      // así ignoramos columnas que la app no conoce (user_id) y evitamos
+      // falsos positivos por tipos (ej. numeric que vuelve como string).
+      const existingById = new Map(existing.map((r) => [r.id, spec.fromRow(r)]));
+
+      // solo mandamos a upsert lo que es nuevo o realmente cambió — en vez
+      // de reenviar la tabla completa en cada guardado.
+      const changed = items.filter((item) => {
+        const prev = existingById.get(item.id);
+        return !prev || !shallowEqual(prev, item);
+      });
+      const nextIds = new Set(items.map((i) => i.id));
       const toDelete = existing.map((r) => r.id).filter((id) => !nextIds.has(id));
 
-      if (rows.length > 0) {
-        const { error: upsertError } = await supabase.from(spec.table).upsert(rows);
+      if (changed.length > 0) {
+        const { error: upsertError } = await supabase.from(spec.table).upsert(changed.map(spec.toRow));
         if (upsertError) throw upsertError;
       }
       if (toDelete.length > 0) {
@@ -84,3 +95,9 @@ export const storage = {
     }
   },
 };
+
+function shallowEqual(a, b) {
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((k) => a[k] === b[k]);
+}

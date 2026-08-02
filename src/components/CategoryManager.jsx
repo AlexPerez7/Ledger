@@ -11,7 +11,7 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
         <div className="display" style={{ fontSize: 13.5, fontWeight: 600 }}>Categorías</div>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
+        <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
         {categories.map((c) => {
@@ -23,6 +23,8 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                 <button
                   onClick={() => setPickerFor(pickerOpen ? null : c.id)}
                   title="Cambiar ícono"
+                  aria-label={`Cambiar ícono de ${c.label}`}
+                  aria-expanded={pickerOpen}
                   style={{
                     width: 22, height: 22, borderRadius: 6, background: `${c.color}22`, display: "flex",
                     alignItems: "center", justifyContent: "center", flexShrink: 0, border: pickerOpen ? `1px solid ${c.color}` : "1px solid transparent",

@@ -5,7 +5,7 @@ import { TOKENS } from "../lib/constants.js";
 
 // Popover en portal (no absolute anidado) para que no lo recorten los
 // contenedores con overflow:hidden que usan las listas de la app.
-export function ConfirmDeleteButton({ onConfirm, text = "¿Eliminar?", size = 13, color, title }) {
+export function ConfirmDeleteButton({ onConfirm, text = "¿Eliminar?", size = 13, color, title = "Eliminar" }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState(null);
   const btnRef = useRef(null);
@@ -37,6 +37,7 @@ export function ConfirmDeleteButton({ onConfirm, text = "¿Eliminar?", size = 13
       <button
         ref={btnRef}
         title={title}
+        aria-label={title}
         onClick={(e) => { e.stopPropagation(); openPopover(); }}
         style={{ background: "none", border: "none", cursor: "pointer", color: color || TOKENS.textFaint, padding: 4 }}
       >

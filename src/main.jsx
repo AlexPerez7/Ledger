@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import { AuthGate } from "./components/AuthGate.jsx";
+import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import "./index.css";
 
 if ("serviceWorker" in navigator) {
@@ -19,6 +20,8 @@ if ("serviceWorker" in navigator) {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <AuthGate />
+    <ErrorBoundary>
+      <AuthGate />
+    </ErrorBoundary>
   </React.StrictMode>
 );

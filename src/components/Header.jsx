@@ -30,7 +30,7 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
               const Icon = it.icon;
               const active = tab === it.id;
               return (
-                <button key={it.id} onClick={() => setTab(it.id)} style={{
+                <button key={it.id} onClick={() => setTab(it.id)} aria-label={it.label} aria-current={active ? "page" : undefined} style={{
                   display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 7,
                   border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
                   background: active ? TOKENS.bg : "transparent", color: active ? TOKENS.text : TOKENS.textMuted,
@@ -41,7 +41,11 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
             })}
           </nav>
           {onToggleTheme && (
-            <button onClick={onToggleTheme} title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"} style={{
+            <button
+              onClick={onToggleTheme}
+              title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              style={{
               display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
               border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
             }}>
@@ -49,7 +53,7 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
             </button>
           )}
           {onSignOut && (
-            <button onClick={onSignOut} title="Cerrar sesión" style={{
+            <button onClick={onSignOut} title="Cerrar sesión" aria-label="Cerrar sesión" style={{
               display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
               border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
             }}>

@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import * as XLSX from "xlsx";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 
 import { TOKENS, DEFAULT_CATEGORIES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "./lib/constants.js";
 import { storage } from "./lib/storage.js";
@@ -11,10 +10,13 @@ import {
 
 import { Header, MonthBar } from "./components/Header.jsx";
 import { CategoryManager } from "./components/CategoryManager.jsx";
-import { Resumen } from "./components/Resumen.jsx";
 import { Movimientos } from "./components/Movimientos.jsx";
 import { Conciliacion } from "./components/Conciliacion.jsx";
 import { ToastStack } from "./components/Toast.jsx";
+import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
+
+// recharts solo hace falta en el tab Resumen — se separa en su propio chunk
+const Resumen = lazy(() => import("./components/Resumen.jsx").then((m) => ({ default: m.Resumen })));
 
 export default function App({ onSignOut, theme, onToggleTheme }) {
   const [transactions, setTransactions] = useState([]);
@@ -36,21 +38,41 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   );
   const getCat = useCallback((id) => catMap[id] || { id, label: id, color: TOKENS.textFaint, icon: DEFAULT_CATEGORY_ICON }, [catMap]);
 
+  // optimista: aplica el cambio ya, pero si Supabase rechaza el guardado
+  // revierte el estado local en vez de dejarlo "aplicado" solo de mentira.
   const persistTx = useCallback(async (next) => {
+    const prev = transactions;
     setTransactions(next);
     const res = await storage.set("transactions", JSON.stringify(next));
-    setSyncError(res ? null : "No se pudo guardar en el servidor. Revisa tu conexión — si recargas ahora podrías perder este cambio.");
-  }, []);
+    if (!res) {
+      setTransactions(prev);
+      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, probá de nuevo.");
+    } else {
+      setSyncError(null);
+    }
+  }, [transactions]);
   const persistCats = useCallback(async (next) => {
+    const prev = categories;
     setCategories(next);
     const res = await storage.set("categories", JSON.stringify(next));
-    setSyncError(res ? null : "No se pudo guardar en el servidor. Revisa tu conexión — si recargas ahora podrías perder este cambio.");
-  }, []);
+    if (!res) {
+      setCategories(prev);
+      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, probá de nuevo.");
+    } else {
+      setSyncError(null);
+    }
+  }, [categories]);
   const persistRules = useCallback(async (next) => {
+    const prev = merchantRules;
     setMerchantRules(next);
     const res = await storage.set("merchantRules", JSON.stringify(next));
-    setSyncError(res ? null : "No se pudo guardar en el servidor. Revisa tu conexión — si recargas ahora podrías perder este cambio.");
-  }, []);
+    if (!res) {
+      setMerchantRules(prev);
+      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, probá de nuevo.");
+    } else {
+      setSyncError(null);
+    }
+  }, [merchantRules]);
 
   // ---- persistence (Supabase, vía src/lib/storage.js) ----------------------
   useEffect(() => {
@@ -73,14 +95,16 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
       }
       setLoaded(true);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- carga inicial: debe correr una sola vez al montar
     })();
-  }, [persistCats]);
+  }, []);
 
   // ---- import xls -----------------------------------------------------------
   const handleFile = useCallback(
     async (file) => {
       const toastId = pushToast("loading", "Leyendo archivo…");
       try {
+        const XLSX = await import("xlsx"); // solo se descarga al importar un archivo
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -342,30 +366,38 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         )}
 
         {tab === "resumen" && (
-          <Resumen
-            stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
-            dailySpend={dailySpend} hasTransactions={transactions.length > 0}
-          />
+          <ErrorBoundary>
+            <Suspense fallback={<div style={{ color: TOKENS.textFaint, padding: "40px 0", textAlign: "center", fontSize: 12.5 }}>Cargando…</div>}>
+              <Resumen
+                stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
+                dailySpend={dailySpend} hasTransactions={transactions.length > 0}
+              />
+            </Suspense>
+          </ErrorBoundary>
         )}
 
         {tab === "movimientos" && (
-          <Movimientos
-            filteredTx={filteredTx}
-            hasTransactions={transactions.length > 0}
-            categories={categories}
-            getCat={getCat}
-            search={search} setSearch={setSearch}
-            catFilter={catFilter} setCatFilter={setCatFilter}
-            saveTxEdit={saveTxEdit}
-            deleteTransaction={deleteTransaction}
-            showManualForm={showManualForm} setShowManualForm={setShowManualForm}
-            addManual={addManual}
-            handleFile={handleFile}
-          />
+          <ErrorBoundary>
+            <Movimientos
+              filteredTx={filteredTx}
+              hasTransactions={transactions.length > 0}
+              categories={categories}
+              getCat={getCat}
+              search={search} setSearch={setSearch}
+              catFilter={catFilter} setCatFilter={setCatFilter}
+              saveTxEdit={saveTxEdit}
+              deleteTransaction={deleteTransaction}
+              showManualForm={showManualForm} setShowManualForm={setShowManualForm}
+              addManual={addManual}
+              handleFile={handleFile}
+            />
+          </ErrorBoundary>
         )}
 
         {tab === "conciliacion" && (
-          <Conciliacion currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth} />
+          <ErrorBoundary>
+            <Conciliacion currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth} />
+          </ErrorBoundary>
         )}
       </main>
 

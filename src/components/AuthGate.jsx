@@ -3,15 +3,20 @@ import { TOKENS } from "../lib/constants.js";
 import { useTheme } from "../lib/useTheme.js";
 import { supabase } from "../lib/supabaseClient.js";
 import { Auth } from "./Auth.jsx";
+import { ResetPassword } from "./ResetPassword.jsx";
 import App from "../App.jsx";
 
 export function AuthGate() {
   const [session, setSession] = useState(undefined); // undefined = todavía no se sabe
+  const [recovering, setRecovering] = useState(false); // true: llegó desde el link de "olvidé mi contraseña"
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => setSession(newSession));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === "PASSWORD_RECOVERY") setRecovering(true);
+      setSession(newSession);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -22,6 +27,8 @@ export function AuthGate() {
       </div>
     );
   }
+
+  if (recovering) return <ResetPassword onDone={() => setRecovering(false)} />;
 
   if (!session) return <Auth />;
 
