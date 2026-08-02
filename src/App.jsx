@@ -285,6 +285,15 @@ export default function App({ onSignOut }) {
     return Object.values(map).sort((a, b) => (a.month > b.month ? 1 : -1)).slice(-6);
   }, [transactions]);
 
+  const dailySpend = useMemo(() => {
+    const map = {};
+    transactions.forEach((t) => {
+      if (t.amount >= 0 || !t.date) return;
+      map[t.date] = (map[t.date] || 0) + Math.abs(t.amount);
+    });
+    return map;
+  }, [transactions]);
+
   const reconcileStats = useMemo(() => {
     if (!currentMonth) return null;
     const inMonth = transactions.filter((t) => monthKey(t.date) === currentMonth);
@@ -332,7 +341,12 @@ export default function App({ onSignOut }) {
           <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onClose={() => setShowCatManager(false)} />
         )}
 
-        {tab === "resumen" && <Resumen stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth} />}
+        {tab === "resumen" && (
+          <Resumen
+            stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
+            dailySpend={dailySpend} hasTransactions={transactions.length > 0}
+          />
+        )}
 
         {tab === "movimientos" && (
           <Movimientos

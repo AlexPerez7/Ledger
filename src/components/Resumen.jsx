@@ -6,6 +6,7 @@ import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3 } fro
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
 import { Panel, EmptyState, StatCard } from "./Shared.jsx";
+import { SpendHeatmap } from "./Heatmap.jsx";
 
 const MONTH_NAMES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmtMonth(m) {
@@ -14,7 +15,7 @@ function fmtMonth(m) {
   return `${MONTH_NAMES[parseInt(mo, 10) - 1]} ${y}`;
 }
 
-export function Resumen({ stats, byCategory, byMonth, currentMonth }) {
+export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions }) {
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
@@ -86,6 +87,10 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth }) {
           )}
         </Panel>
       </div>
+
+      <Panel title="Actividad de gasto diaria">
+        <SpendHeatmap dailySpend={dailySpend} hasTransactions={hasTransactions} />
+      </Panel>
     </div>
   );
 }
