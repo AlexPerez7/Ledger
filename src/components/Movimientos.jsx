@@ -10,12 +10,18 @@ import { exportBackup } from "../lib/exportBackup.js";
 
 const SWIPE_ACTION_WIDTH = 128; // ancho de los 2 botones (editar + borrar) revelados al deslizar
 
+const actionBtnStyle = {
+  display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 8,
+  border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.textMuted,
+  fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap",
+};
+
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile, pushToast,
 }) {
-  const [dragOver, setDragOver] = useState(false);
   const [exportingBackup, setExportingBackup] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const handleExportBackup = async () => {
     if (exportingBackup) return;
@@ -48,42 +54,27 @@ export function Movimientos({
         </button>
       </div>
 
-      <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
-        <label
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-          style={{
-            border: `1.5px dashed ${dragOver ? TOKENS.accent : TOKENS.border}`, borderRadius: 12, padding: "18px 16px",
-            display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
-            background: dragOver ? "var(--tint-accent-soft)" : TOKENS.surface,
-          }}
-        >
-          <input type="file" accept=".xls,.xlsx" style={{ display: "none" }} onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
-          <div style={{ width: 34, height: 34, borderRadius: 8, background: TOKENS.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Upload size={16} color={TOKENS.accent} />
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>Subir movimientos del banco</div>
-            <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>Arrastra el .xls de reportCollection o haz clic para elegirlo</div>
-          </div>
-        </label>
-
-        <button onClick={() => setShowManualForm(true)} style={{
-          border: `1.5px solid ${TOKENS.border}`, borderRadius: 12, padding: "18px 16px", background: TOKENS.surface,
-          display: "flex", alignItems: "center", gap: 12, cursor: "pointer", color: TOKENS.text, textAlign: "left",
-        }}>
-          <div style={{ width: 34, height: 34, borderRadius: 8, background: TOKENS.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Plus size={16} color={TOKENS.pending} />
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>Agregar gasto o ingreso manual</div>
-            <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>Para movimientos que aún no aparecen en el banco</div>
-          </div>
-        </button>
-      </div>
-
-      {showManualForm && <ManualForm categories={categories} onClose={() => setShowManualForm(false)} onSubmit={addManual} />}
+      {/* recién al primer uso: sin datos todavía, conviene la invitación grande
+          a importar/agregar. Una vez que hay movimientos, esas dos áreas
+          gigantes solo ocupan espacio — se reemplazan por botones compactos
+          junto a la búsqueda. */}
+      {!hasTransactions && (
+        <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+          <ImportDropzone onFile={handleFile} />
+          <button onClick={() => setShowManualForm(true)} style={{
+            border: `1.5px solid ${TOKENS.border}`, borderRadius: 12, padding: "18px 16px", background: TOKENS.surface,
+            display: "flex", alignItems: "center", gap: 12, cursor: "pointer", color: TOKENS.text, textAlign: "left",
+          }}>
+            <div style={{ width: 34, height: 34, borderRadius: 8, background: TOKENS.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Plus size={16} color={TOKENS.pending} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>Agregar gasto o ingreso manual</div>
+              <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>Para movimientos que aún no aparecen en el banco</div>
+            </div>
+          </button>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: "1 1 220px" }}>
@@ -98,7 +89,23 @@ export function Movimientos({
           <option value="all">Todas las categorías</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
+        {hasTransactions && (
+          <>
+            <button onClick={() => setShowImportModal(true)} style={actionBtnStyle} title="Importar movimientos del banco desde un .xls">
+              <Upload size={13} /> Importar Excel
+            </button>
+            <button onClick={() => setShowManualForm((v) => !v)} style={actionBtnStyle} title="Agregar un gasto o ingreso manual">
+              <Plus size={13} /> Nuevo registro
+            </button>
+          </>
+        )}
       </div>
+
+      {showManualForm && <ManualForm categories={categories} onClose={() => setShowManualForm(false)} onSubmit={addManual} />}
+
+      {showImportModal && (
+        <ImportModal onClose={() => setShowImportModal(false)} onFile={(f) => { handleFile(f); setShowImportModal(false); }} />
+      )}
 
       <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, overflow: "hidden" }}>
         {filteredTx.length === 0 ? (
@@ -155,6 +162,56 @@ export function Movimientos({
             </div>
           ))
         )}
+      </div>
+    </div>
+  );
+}
+
+// Zona de drag & drop para el .xls del banco — se usa tanto en la invitación
+// grande de primer uso como dentro del modal de importar (mismo componente,
+// misma lógica, para no duplicar el manejo de drag/drop).
+function ImportDropzone({ onFile }) {
+  const [dragOver, setDragOver] = useState(false);
+  return (
+    <label
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}
+      style={{
+        border: `1.5px dashed ${dragOver ? TOKENS.accent : TOKENS.border}`, borderRadius: 12, padding: "18px 16px",
+        display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
+        background: dragOver ? "var(--tint-accent-soft)" : TOKENS.surface,
+      }}
+    >
+      <input type="file" accept=".xls,.xlsx" style={{ display: "none" }} onChange={(e) => e.target.files[0] && onFile(e.target.files[0])} />
+      <div style={{ width: 34, height: 34, borderRadius: 8, background: TOKENS.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Upload size={16} color={TOKENS.accent} />
+      </div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>Subir movimientos del banco</div>
+        <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>Arrastra el .xls de reportCollection o haz clic para elegirlo</div>
+      </div>
+    </label>
+  );
+}
+
+function ImportModal({ onClose, onFile }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
+      alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
+    }}>
+      <div style={{
+        background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16,
+        padding: 22, maxWidth: 420, width: "100%",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div className="display" style={{ fontSize: 14.5, fontWeight: 600 }}>Importar movimientos</div>
+          <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}>
+            <X size={16} />
+          </button>
+        </div>
+        <ImportDropzone onFile={onFile} />
       </div>
     </div>
   );
