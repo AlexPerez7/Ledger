@@ -1,88 +1,246 @@
 # Ledger — gestor de gastos personal
 
-App de gestión de gastos hecha en React + Vite, pensada para trabajar con las
-cartolas/reportes de movimientos de Banco Falabella (aunque el parser de
-`Fecha | Descripción | Cargo | Abono | Saldo` sirve para cualquier banco que
-exporte en ese formato).
+PWA hecha en React + Vite para llevar el control de tus movimientos
+bancarios, categorizarlos y conciliarlos contra el reporte oficial del
+banco. Pensada originalmente para las cartolas de Banco Falabella, pero el
+parser lee cualquier `.xls` con columnas `Fecha | Descripción | Cargo |
+Abono` en ese orden. Los datos viven en Supabase (Postgres + Auth + Row
+Level Security), así que cada usuario ve solo lo suyo y puede entrar desde
+cualquier dispositivo.
 
 ## Qué hace
 
-- **Importa el `.xls` de movimientos del banco** directo en el navegador (no
-  se sube a ningún servidor). Detecta y omite duplicados si vuelves a subir
-  un archivo que se traslapa con datos ya cargados.
-- **Carga manual** de gastos e ingresos que aún no aparecen en el banco.
-- **Conciliación mensual**: compara lo manual contra el reporte oficial del
-  banco y separa lo confirmado, lo que aún no tiene reporte importado, y lo
-  que sí tiene reporte pero no calza (posible descuadre).
-- **Categorías editables** y una "memoria de comercio": puedes indicar que
-  una descripción como `GOOGLE PLAY...` corresponde a "Claude", y la app
-  recuerda esa regla para futuras importaciones (y corrige las anteriores).
-- Resumen con gráfico de gasto por categoría y evolución de los últimos
-  6 meses.
+**Movimientos**
+- Importa el `.xls` del banco arrastrándolo o desde un modal de
+  importación; detecta y omite duplicados si vuelves a subir un archivo que
+  se traslapa con datos ya cargados, con una barra de progreso real de
+  lectura.
+- Carga manual de gastos e ingresos que aún no aparecen en el banco.
+- Lista agrupada por día ("Hoy", "Ayer", "Lunes, 3 de agosto"), con swipe
+  para editar/borrar en mobile y edición inline en desktop.
+- Selección múltiple con checkboxes y una barra de acciones masivas para
+  borrar o recategorizar varios movimientos a la vez.
+- Búsqueda y filtro por categoría.
+
+**Categorías**
+- Categorías editables (nombre, ícono, color) y una "memoria de comercio":
+  puedes indicar que una descripción como `GOOGLE PLAY...` corresponde a
+  "Claude", y la app recuerda esa regla para futuras importaciones (y
+  corrige retroactivamente las que ya coincidían).
+- Cada categoría tiene un interruptor "cuenta como gasto": pensado para
+  transferencias entre tus propias cuentas (ahorro, etc.), que salen de la
+  cuenta corriente pero no son consumo real — se excluyen de todos los
+  cálculos de gasto sin dejar de aparecer en la lista de movimientos.
+
+**Resumen**
+- Hero con lo gastado en lo que va del mes y comparación contra el mismo
+  tramo de días del mes anterior ("ritmo habitual").
+- Insights en texto plano: variación de gasto total vs. mes pasado,
+  categoría que más subió, aviso si el mes va en verde.
+- Gráfico de gasto por categoría, evolución de los últimos 6 meses, y un
+  heatmap estilo GitHub de actividad de gasto diaria.
+- Botón para exportar el dashboard completo como imagen PNG.
+
+**Conciliación**
+- Compara los movimientos manuales contra el reporte del banco (mismo
+  monto, fecha con hasta 3 días de diferencia) y separa lo confirmado, lo
+  que aún no tiene reporte importado, y lo que sí tiene reporte pero no
+  calza.
+
+**General**
+- Cuenta con email/contraseña (confirmación por correo) y recuperación de
+  contraseña.
+- Modo claro/oscuro con detección de preferencia del sistema.
+- Instalable como PWA con soporte offline y actualización automática del
+  service worker.
+- Respaldo de todos tus datos (movimientos y categorías) a un `.json`
+  descargable, en cualquier momento.
+- Onboarding de 3 pasos la primera vez que entras.
+- Totalmente responsive, con gestos táctiles nativos en mobile.
+
+## Stack
+
+React 18 + Vite 5 · Supabase (Postgres, Auth, RLS) · Recharts · Framer
+Motion · lucide-react · xlsx · html-to-image · vite-plugin-pwa · Vitest.
+Sin TypeScript, sin backend propio: toda la lógica vive en el cliente y
+habla directo con Supabase.
 
 ## Requisitos
 
 - Node.js 18 o superior.
+- Una cuenta gratuita de [Supabase](https://supabase.com).
 
-## Instalación y desarrollo
+## Puesta en marcha
+
+### 1. Clonar e instalar
 
 ```bash
+git clone https://github.com/AlexPerez7/expense-tracker.git
+cd expense-tracker
 npm install
+```
+
+### 2. Crear el proyecto en Supabase
+
+Creá un proyecto nuevo en [supabase.com](https://supabase.com), abrí el
+**SQL Editor** y corré esto para armar las tablas con Row Level Security
+(cada fila queda atada al usuario que la creó, y solo ese usuario puede
+leerla o modificarla):
+
+```sql
+create table transactions (
+  id text primary key,
+  key text not null,
+  date date not null,
+  description text not null,
+  alias text,
+  amount numeric not null,
+  category text not null,
+  source text not null,
+  reconciled boolean not null default false,
+  matched_id text,
+  user_id uuid not null default auth.uid() references auth.users (id)
+);
+
+create table categories (
+  id text primary key,
+  label text not null,
+  color text not null,
+  icon text,
+  exclude_from_expense boolean not null default false,
+  user_id uuid not null default auth.uid() references auth.users (id)
+);
+
+create table merchant_rules (
+  id text primary key,
+  match_text text not null,
+  category_id text not null,
+  alias text,
+  user_id uuid not null default auth.uid() references auth.users (id)
+);
+
+alter table transactions enable row level security;
+alter table categories enable row level security;
+alter table merchant_rules enable row level security;
+
+create policy "usuarios ven y editan solo lo suyo" on transactions
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "usuarios ven y editan solo lo suyo" on categories
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "usuarios ven y editan solo lo suyo" on merchant_rules
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+```
+
+Después, en **Authentication → URL Configuration**, agregá la URL donde vas
+a correr o desplegar la app (ej. `http://localhost:5173` para desarrollo y
+la URL de producción) tanto en *Site URL* como en *Redirect URLs* — la
+recuperación de contraseña depende de que esto esté bien configurado.
+
+Por defecto Supabase pide confirmación por email antes de dejar iniciar
+sesión; si querés saltarte ese paso en desarrollo, desactivalo en
+**Authentication → Providers → Email**.
+
+### 3. Variables de entorno
+
+Copiá `.env.example` a `.env` y completá con los valores de tu proyecto
+(**Project Settings → API** en Supabase):
+
+```bash
+cp .env.example .env
+```
+
+```
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key
+```
+
+### 4. Correr en desarrollo
+
+```bash
 npm run dev
 ```
 
-Abre la URL que te muestre la terminal (por defecto `http://localhost:5173`).
+Abre la URL que muestre la terminal (por defecto `http://localhost:5173`).
+Al crear tu cuenta y confirmar el email, la app siembra las categorías por
+defecto automáticamente.
 
-## Build de producción
+## Scripts disponibles
+
+| Comando           | Qué hace                                               |
+| ------------------ | -------------------------------------------------------- |
+| `npm run dev`       | Servidor de desarrollo con hot reload                    |
+| `npm run build`     | Build de producción en `dist/`                           |
+| `npm run preview`   | Sirve el build de producción localmente para probarlo     |
+| `npm test`          | Corre la suite de Vitest                                  |
+
+## Tests
 
 ```bash
-npm run build
-npm run preview   # para probar el build localmente
+npm test
 ```
 
-El resultado queda en `dist/`.
-
-## Dónde quedan los datos
-
-Todo se guarda en el `localStorage` del navegador (ver `src/lib/storage.js`).
-No hay backend ni base de datos: es 100% local a tu equipo. Si limpias los
-datos del sitio en el navegador, se pierde el historial — conviene no
-depender solo de esto para algo crítico.
+Cubre las funciones puras de `src/lib/utils.js`: parseo de fechas y montos
+del banco, categorización automática, reglas de comercio, agrupado de
+movimientos por día, y el generador de insights.
 
 ## Estructura
 
 ```
 src/
-  main.jsx              punto de entrada
-  App.jsx                estado global, import de XLS, persistencia
-  index.css               fuentes y estilos base
+  main.jsx                    punto de entrada, registro del service worker
+  App.jsx                      estado global, persistencia, derivación de stats/insights
+  index.css                     temas claro/oscuro, animaciones, responsive
   lib/
-    constants.js           tokens de diseño, categorías por defecto, reglas de comercio
-    utils.js                parseo de fechas/montos, categorización automática
-    storage.js               wrapper sobre localStorage
+    supabaseClient.js             cliente de Supabase
+    storage.js                    sync-shim: get/set sobre las tablas de Supabase
+    constants.js                  tokens de diseño, categorías por defecto, reglas de comercio
+    utils.js                      parseo de fechas/montos, categorización, agrupado por día, insights
+    useTheme.js / useIsMobile.js  hooks de UI
+    useToasts.js                  notificaciones flotantes
+    readFile.js                   lectura de archivos con progreso real
+    exportBackup.js               exportación de respaldo a .json
   components/
-    Header.jsx                encabezado y selector de mes
-    CategoryManager.jsx        alta/edición/borrado de categorías
-    Resumen.jsx                  tarjetas de stats + gráficos
-    Movimientos.jsx               import, alta manual, tabla editable
-    Conciliacion.jsx               vista de conciliación mensual
-    Shared.jsx                     Panel, EmptyNote, StatCard, FieldInput
+    AuthGate.jsx / Auth.jsx / ResetPassword.jsx   login, registro, recuperación de contraseña
+    Header.jsx                                     navegación, selector de mes, tema
+    CategoryManager.jsx                            alta/edición/borrado de categorías
+    Resumen.jsx / HeroStat.jsx / Heatmap.jsx / Insights.jsx   dashboard
+    Movimientos.jsx                                import, alta manual, tabla, acciones masivas
+    Conciliacion.jsx                               vista de conciliación mensual
+    Onboarding.jsx                                 introducción de 3 pasos
+    ConfirmDeleteButton.jsx / Toast.jsx            popover de confirmación, notificaciones flotantes
+    ErrorBoundary.jsx / Shared.jsx                 manejo de errores, UI compartida (Panel, StatCard, etc.)
 ```
 
-## Publicar en GitHub
+## PWA y offline
+
+La app es instalable (`vite-plugin-pwa`, `registerType: "autoUpdate"`): el
+service worker precachea todo el app shell para que abra sin conexión, y se
+autoactualiza solo cuando hay una versión nueva. Si el sitio queda abierto
+mucho tiempo sin recargar, revisa por una actualización cada una hora.
+
+## Dónde quedan los datos
+
+Todo se guarda en Supabase (Postgres) con Row Level Security: cada usuario
+solo puede leer y modificar sus propios movimientos, categorías y reglas de
+comercio — nadie más, ni siquiera con la anon key, puede ver los datos de
+otro usuario. Podés bajar un respaldo completo en cualquier momento desde
+Movimientos → "Descargar respaldo".
+
+## Deploy
+
+El repo incluye un workflow de GitHub Actions
+(`.github/workflows/deploy.yml`) que en cada push a `main` construye el
+proyecto y lo publica en GitHub Pages. Para que funcione, agregá
+`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como *secrets* del
+repositorio (**Settings → Secrets and variables → Actions**) — el build en
+CI los necesita igual que el `.env` local.
+
+Para desplegar a mano en otro lado (Vercel, Netlify, etc.):
 
 ```bash
-git init
-git add .
-git commit -m "Primer commit: gestor de gastos"
-git branch -M main
-git remote add origin https://github.com/<tu-usuario>/<tu-repo>.git
-git push -u origin main
+npm run build
 ```
 
-## Desplegar (opcional)
-
-Al ser un sitio estático (`npm run build` genera `dist/`), se puede alojar
-gratis en GitHub Pages, Vercel o Netlify. Como los datos viven en
-`localStorage` del navegador, el hosting no afecta la privacidad de tus
-movimientos — igual quedan solo en tu dispositivo.
+El resultado queda en `dist/`. Como `vite.config.js` fija
+`base: "/expense-tracker/"` para servir bien en GitHub Pages, si lo alojas
+en un dominio propio o en la raíz de otro hosting cambiá ese valor a `/`.
