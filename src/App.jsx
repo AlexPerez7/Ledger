@@ -358,27 +358,25 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       if (date.slice(0, 7) === thisMonthKey) spentSoFar += amt;
     }
 
-    const priorMonths = Array.from(new Set(transactions.map((t) => monthKey(t.date))))
-      .filter((mk) => mk && mk < thisMonthKey)
-      .sort()
-      .slice(-3);
+    // "ritmo habitual": mismo tramo (día 1 al día actual) pero del mes
+    // calendario inmediatamente anterior — "manzanas con manzanas". La
+    // versión anterior escalaba el TOTAL del mes por una fracción de días
+    // (total * día/díasDelMes), lo que asume gasto parejo día a día y
+    // distorsiona el % apenas hay un gasto grande fuera de ese tramo (ej. un
+    // pago grande el día 25 "contaba" como si ya hubiera pasado el día 5).
+    // Comparar el mismo rango real de fechas evita esa distorsión.
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthKey = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`;
+    const hasPrevMonthData = transactions.some((t) => monthKey(t.date) === prevMonthKey);
 
-    // "ritmo habitual": el total de cada mes anterior, escalado a lo que
-    // representaría llevar gastado a esta altura del mes (día/díasDelMes) —
-    // no depende de comparar fechas puntuales, así que no lo afecta el
-    // mismo desfase de fechas que rompía spentSoFar.
     let typicalPace = null;
-    if (priorMonths.length > 0) {
-      const scaled = priorMonths.map((mk) => {
-        let total = 0;
-        for (const [date, amt] of Object.entries(dailySpend)) {
-          if (date.slice(0, 7) === mk) total += amt;
-        }
-        const [y, m] = mk.split("-").map(Number);
-        const daysInMonth = new Date(y, m, 0).getDate();
-        return (total * Math.min(dayOfMonth, daysInMonth)) / daysInMonth;
-      });
-      typicalPace = scaled.reduce((a, b) => a + b, 0) / scaled.length;
+    if (hasPrevMonthData) {
+      typicalPace = 0;
+      for (const [date, amt] of Object.entries(dailySpend)) {
+        if (date.slice(0, 7) !== prevMonthKey) continue;
+        const day = Number(date.slice(8, 10));
+        if (day <= dayOfMonth) typicalPace += amt;
+      }
     }
 
     return { spentSoFar, typicalPace, dayOfMonth, monthKey: thisMonthKey };
