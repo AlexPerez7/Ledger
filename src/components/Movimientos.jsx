@@ -54,7 +54,7 @@ export function Movimientos({
 
   // acciones masivas: onBulkDelete/onBulkChangeCategory ya hablan con
   // Supabase (vía persistTx en App.jsx) y devuelven si funcionó o no —
-  // acá solo se limpia la selección cuando la acción realmente terminó bien.
+  // aquí solo se limpia la selección cuando la acción realmente terminó bien.
   const handleBulkDelete = async () => {
     const count = selectedIds.length;
     const ok = await onBulkDelete(selectedIds);

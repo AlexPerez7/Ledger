@@ -82,8 +82,8 @@ npm install
 
 ### 2. Crear el proyecto en Supabase
 
-Creá un proyecto nuevo en [supabase.com](https://supabase.com), abrí el
-**SQL Editor** y corré esto para armar las tablas con Row Level Security
+Crea un proyecto nuevo en [supabase.com](https://supabase.com), abre el
+**SQL Editor** y ejecuta esto para armar las tablas con Row Level Security
 (cada fila queda atada al usuario que la creó, y solo ese usuario puede
 leerla o modificarla):
 
@@ -131,18 +131,18 @@ create policy "usuarios ven y editan solo lo suyo" on merchant_rules
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 ```
 
-Después, en **Authentication → URL Configuration**, agregá la URL donde vas
+Después, en **Authentication → URL Configuration**, agrega la URL donde vas
 a correr o desplegar la app (ej. `http://localhost:5173` para desarrollo y
 la URL de producción) tanto en *Site URL* como en *Redirect URLs* — la
 recuperación de contraseña depende de que esto esté bien configurado.
 
 Por defecto Supabase pide confirmación por email antes de dejar iniciar
-sesión; si querés saltarte ese paso en desarrollo, desactivalo en
+sesión; si quieres saltarte ese paso en desarrollo, desactívalo en
 **Authentication → Providers → Email**.
 
 ### 3. Variables de entorno
 
-Copiá `.env.example` a `.env` y completá con los valores de tu proyecto
+Copia `.env.example` a `.env` y completa con los valores de tu proyecto
 (**Project Settings → API** en Supabase):
 
 ```bash
@@ -223,14 +223,14 @@ mucho tiempo sin recargar, revisa por una actualización cada una hora.
 Todo se guarda en Supabase (Postgres) con Row Level Security: cada usuario
 solo puede leer y modificar sus propios movimientos, categorías y reglas de
 comercio — nadie más, ni siquiera con la anon key, puede ver los datos de
-otro usuario. Podés bajar un respaldo completo en cualquier momento desde
+otro usuario. Puedes bajar un respaldo completo en cualquier momento desde
 Movimientos → "Descargar respaldo".
 
 ## Deploy
 
 El repo incluye un workflow de GitHub Actions
 (`.github/workflows/deploy.yml`) que en cada push a `main` construye el
-proyecto y lo publica en GitHub Pages. Para que funcione, agregá
+proyecto y lo publica en GitHub Pages. Para que funcione, agrega
 `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como *secrets* del
 repositorio (**Settings → Secrets and variables → Actions**) — el build en
 CI los necesita igual que el `.env` local.
@@ -243,4 +243,4 @@ npm run build
 
 El resultado queda en `dist/`. Como `vite.config.js` fija
 `base: "/expense-tracker/"` para servir bien en GitHub Pages, si lo alojas
-en un dominio propio o en la raíz de otro hosting cambiá ese valor a `/`.
+en un dominio propio o en la raíz de otro hosting cambia ese valor a `/`.

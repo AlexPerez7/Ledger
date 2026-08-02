@@ -210,7 +210,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   // acciones masivas (bulk): mismo camino que cualquier otro cambio de
   // transactions — persistTx ya diffea contra Supabase (borra lo que falta,
   // upsertea lo que cambió) y hace rollback si el guardado falla, así que
-  // acá solo arma el array `next` y devuelve si funcionó o no.
+  // aquí solo arma el array `next` y devuelve si funcionó o no.
   const bulkDeleteTransactions = useCallback(
     async (ids) => {
       const idSet = new Set(ids);
