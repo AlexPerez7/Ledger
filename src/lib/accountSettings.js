@@ -21,9 +21,11 @@ export async function getAccountSettings() {
 // user_id no se manda: la columna tiene `default auth.uid()`, y como es la
 // primary key, Postgres la resuelve antes de evaluar el ON CONFLICT — mismo
 // patrón que ya usa storage.js para las demás tablas.
-export async function saveAccountSettings(baseBalance) {
+// lastSyncDate es opcional: el ajuste manual usa "ahora" (default), pero la
+// conciliación automática al importar el .xls necesita fijarlo a la fecha
+// exacta de la fila más reciente del banco, no al momento de la importación.
+export async function saveAccountSettings(baseBalance, lastSyncDate = new Date().toISOString()) {
   try {
-    const lastSyncDate = new Date().toISOString();
     const { error } = await supabase
       .from("account_settings")
       .upsert({ base_balance: baseBalance, last_sync_date: lastSyncDate }, { onConflict: "user_id" });

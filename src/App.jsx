@@ -7,7 +7,7 @@ import { useToasts } from "./lib/useToasts.js";
 import { readFileWithProgress } from "./lib/readFile.js";
 import {
   autoCategory, applyMerchantRules, parseClpNumber, parseBankDate,
-  makeKey, monthKey, uid, computeInsights,
+  makeKey, monthKey, uid, computeInsights, formatCLP,
 } from "./lib/utils.js";
 
 import { Header, MonthBar } from "./components/Header.jsx";
@@ -137,13 +137,25 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         const existingKeys = new Set(transactions.filter((t) => t.source === "bank").map((t) => t.key));
         const imported = [];
         let skipped = 0;
+        // fila con la fecha más reciente del archivo — de acá sale la
+        // conciliación automática del saldo, independiente de si esa fila
+        // puntual ya estaba importada antes (el dato de Saldo sigue siendo
+        // válido igual). Sobre empates de fecha, se queda con la última que
+        // aparece en el archivo (los reportes del banco vienen ordenados).
+        let latestRow = null;
 
         for (const r of dataRows) {
-          const [fecha, desc, cargo, abono] = r;
+          const [fecha, desc, cargo, abono, saldo] = r;
           if (!desc) continue;
           const date = parseBankDate(fecha);
           const cargoN = parseClpNumber(cargo);
           const abonoN = parseClpNumber(abono);
+          // "Saldo" viene en formato chileno (ej. "$ 1.569.661") — mismo
+          // parser que ya limpia Cargo/Abono: saca $, espacios y puntos de
+          // miles para dejar el entero.
+          const saldoN = parseClpNumber(saldo);
+          if (!latestRow || date >= latestRow.date) latestRow = { date, saldo: saldoN };
+
           const key = makeKey(date, String(desc), cargoN, abonoN);
           if (existingKeys.has(key)) { skipped++; continue; }
           existingKeys.add(key);
@@ -176,12 +188,27 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         }
 
         const next = [...transactions, ...imported];
-        await persistTx(next);
-        updateToast(
-          toastId,
-          "ok",
-          `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}${skipped ? `, ${skipped} ya existía${skipped === 1 ? "" : "n"} (omitidos).` : "."}`
-        );
+        const persisted = await persistTx(next);
+        const importedMsg = `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}${skipped ? `, ${skipped} ya existía${skipped === 1 ? "" : "n"} (omitidos).` : "."}`;
+
+        // conciliación automática: solo si los movimientos realmente se
+        // guardaron y el archivo traía columna de Saldo utilizable.
+        if (persisted && latestRow) {
+          const [y, m, d] = latestRow.date.split("-").map(Number);
+          // fin del día de esa fecha: el Saldo del banco es el saldo AL
+          // CIERRE de ese día, así que un movimiento manual cargado ese
+          // mismo día (antes de importar) ya debería estar reflejado ahí.
+          const lastSyncDate = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
+          const settings = await saveAccountSettings(latestRow.saldo, lastSyncDate);
+          if (settings) {
+            setAccountSettings(settings);
+            updateToast(toastId, "ok", `Movimientos importados. Saldo conciliado automáticamente a ${formatCLP(latestRow.saldo)}.`);
+          } else {
+            updateToast(toastId, "warn", `${importedMsg} No se pudo conciliar el saldo automáticamente.`);
+          }
+        } else {
+          updateToast(toastId, "ok", importedMsg);
+        }
       } catch (e) {
         console.error(e);
         updateToast(toastId, "error", "No se pudo leer el archivo. ¿Es el .xls de movimientos del banco?");
