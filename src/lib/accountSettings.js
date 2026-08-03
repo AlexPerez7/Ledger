@@ -18,17 +18,28 @@ export async function getAccountSettings() {
   }
 }
 
-// user_id no se manda: la columna tiene `default auth.uid()`, y como es la
-// primary key, Postgres la resuelve antes de evaluar el ON CONFLICT — mismo
-// patrón que ya usa storage.js para las demás tablas.
 // lastSyncDate es opcional: el ajuste manual usa "ahora" (default), pero la
 // conciliación automática al importar el .xls necesita fijarlo a la fecha
 // exacta de la fila más reciente del banco, no al momento de la importación.
 export async function saveAccountSettings(baseBalance, lastSyncDate = new Date().toISOString()) {
   try {
+    // user_id SÍ hay que mandarlo explícito en el payload: con
+    // onConflict: "user_id", PostgREST arma el INSERT ... ON CONFLICT
+    // (user_id) usando solo las columnas presentes en el body. Si user_id no
+    // viene (aunque la columna tenga default auth.uid()), la primera vez
+    // igual inserta bien (no hay fila previa), pero en la segunda llamada ya
+    // existe una fila con ese user_id y el upsert no la detecta como
+    // conflicto — revienta con una violación de unicidad silenciosa
+    // (se cae al catch de abajo). Por eso este bug no aparecía al usar
+    // "Ajustar saldo" por primera vez, solo al reconciliar después.
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    const userId = userData?.user?.id;
+    if (!userId) throw new Error("No hay usuario autenticado");
+
     const { error } = await supabase
       .from("account_settings")
-      .upsert({ base_balance: baseBalance, last_sync_date: lastSyncDate }, { onConflict: "user_id" });
+      .upsert({ user_id: userId, base_balance: baseBalance, last_sync_date: lastSyncDate }, { onConflict: "user_id" });
     if (error) throw error;
     return { baseBalance, lastSyncDate };
   } catch (e) {
