@@ -136,11 +136,12 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         const existingKeys = new Set(transactions.filter((t) => t.source === "bank").map((t) => t.key));
         const imported = [];
-        // fila con la fecha más reciente del archivo — de acá sale la
-        // conciliación automática del saldo, independiente de si esa fila
-        // puntual ya estaba importada antes (el dato de Saldo sigue siendo
-        // válido igual). Sobre empates de fecha, se queda con la última que
-        // aparece en el archivo (los reportes del banco vienen ordenados).
+        // fila con la fecha más reciente del archivo. Se calcula escaneando
+        // dataRows (TODAS las filas crudas del Excel, sin filtrar), no el
+        // array `imported` — así, si el archivo llega con movimientos que ya
+        // estaban todos importados (`imported` queda vacío), el Saldo sigue
+        // extrayéndose igual. Sobre empates de fecha, se queda con la última
+        // que aparece en el archivo (los reportes del banco vienen ordenados).
         let latestRow = null;
 
         for (const r of dataRows) {
@@ -200,10 +201,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         // de ese día, así que un movimiento manual cargado ese mismo día
         // (antes de importar) ya debería estar reflejado ahí.
         const fileLastSyncDate = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
-        const currentLastSyncDate = accountSettings?.lastSyncDate;
+        // sin account_settings todavía, o con last_sync_date nulo, es la
+        // primera sincronización del usuario: nunca puede ser "histórico"
+        // porque no hay nada previo con qué compararlo.
+        const isFirstSync = !accountSettings || !accountSettings.lastSyncDate;
         // comparación como objetos Date (no de strings) para no depender del
         // formato exacto en que Supabase devuelve el timestamptz.
-        const isHistoric = currentLastSyncDate && new Date(fileLastSyncDate) < new Date(currentLastSyncDate);
+        const isHistoric = !isFirstSync && new Date(fileLastSyncDate) < new Date(accountSettings.lastSyncDate);
 
         if (isHistoric) {
           updateToast(toastId, "warn", "Movimientos procesados. Saldo sin cambios (archivo antiguo).");
