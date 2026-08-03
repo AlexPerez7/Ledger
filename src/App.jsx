@@ -136,7 +136,6 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         const existingKeys = new Set(transactions.filter((t) => t.source === "bank").map((t) => t.key));
         const imported = [];
-        let skipped = 0;
         // fila con la fecha más reciente del archivo — de acá sale la
         // conciliación automática del saldo, independiente de si esa fila
         // puntual ya estaba importada antes (el dato de Saldo sigue siendo
@@ -157,7 +156,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           if (!latestRow || date >= latestRow.date) latestRow = { date, saldo: saldoN };
 
           const key = makeKey(date, String(desc), cargoN, abonoN);
-          if (existingKeys.has(key)) { skipped++; continue; }
+          if (existingKeys.has(key)) continue;
           existingKeys.add(key);
           const amount = abonoN > 0 ? abonoN : -cargoN;
           const cleanDesc = String(desc).trim().replace(/\s+/g, " ");
@@ -176,45 +175,62 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           });
         }
 
-        if (imported.length === 0) {
-          updateToast(
-            toastId,
-            skipped > 0 ? "warn" : "error",
-            skipped > 0
-              ? `Este archivo ya estaba importado — los ${skipped} movimientos que trae ya existían, no se agregó nada nuevo.`
-              : "No se reconocieron movimientos en este archivo."
-          );
+        // archivo sin ninguna fila reconocible (ni para importar ni para
+        // conciliar) — aquí sí no hay nada que hacer.
+        if (imported.length === 0 && !latestRow) {
+          updateToast(toastId, "error", "No se reconocieron movimientos en este archivo.");
           return;
         }
 
-        const next = [...transactions, ...imported];
-        const persisted = await persistTx(next);
-        const importedMsg = `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}${skipped ? `, ${skipped} ya existía${skipped === 1 ? "" : "n"} (omitidos).` : "."}`;
+        // si todo lo que traía el archivo ya estaba importado no hay nada
+        // nuevo que persistir, pero igual puede traer un Saldo útil para
+        // conciliar — por eso ya NO se corta aquí como antes.
+        const persisted = imported.length > 0 ? await persistTx([...transactions, ...imported]) : true;
+        if (imported.length > 0 && !persisted) {
+          updateToast(toastId, "error", "No se pudieron guardar los movimientos importados. Intenta de nuevo.");
+          return;
+        }
 
-        // conciliación automática: solo si los movimientos realmente se
-        // guardaron y el archivo traía columna de Saldo utilizable.
-        if (persisted && latestRow) {
-          const [y, m, d] = latestRow.date.split("-").map(Number);
-          // fin del día de esa fecha: el Saldo del banco es el saldo AL
-          // CIERRE de ese día, así que un movimiento manual cargado ese
-          // mismo día (antes de importar) ya debería estar reflejado ahí.
-          const lastSyncDate = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
-          const settings = await saveAccountSettings(latestRow.saldo, lastSyncDate);
+        // candado cronológico: el Saldo del banco solo se aplica si el
+        // archivo es igual o más reciente que la última conciliación
+        // guardada. Sin esto, subir un archivo viejo (histórico) pisaría un
+        // saldo ya actualizado con un valor desactualizado.
+        const [y, m, d] = latestRow.date.split("-").map(Number);
+        // fin del día de esa fecha: el Saldo del banco es el saldo AL CIERRE
+        // de ese día, así que un movimiento manual cargado ese mismo día
+        // (antes de importar) ya debería estar reflejado ahí.
+        const fileLastSyncDate = new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
+        const currentLastSyncDate = accountSettings?.lastSyncDate;
+        // comparación como objetos Date (no de strings) para no depender del
+        // formato exacto en que Supabase devuelve el timestamptz.
+        const isHistoric = currentLastSyncDate && new Date(fileLastSyncDate) < new Date(currentLastSyncDate);
+
+        if (isHistoric) {
+          updateToast(toastId, "warn", "Movimientos procesados. Saldo sin cambios (archivo antiguo).");
+        } else {
+          const settings = await saveAccountSettings(latestRow.saldo, fileLastSyncDate);
           if (settings) {
             setAccountSettings(settings);
-            updateToast(toastId, "ok", `Movimientos importados. Saldo conciliado automáticamente a ${formatCLP(latestRow.saldo)}.`);
+            updateToast(
+              toastId,
+              "ok",
+              imported.length > 0
+                ? `Movimientos importados. Saldo conciliado a ${formatCLP(latestRow.saldo)}.`
+                : `Archivo procesado (0 nuevos). Saldo conciliado a ${formatCLP(latestRow.saldo)}.`
+            );
           } else {
+            const importedMsg = imported.length > 0
+              ? `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}.`
+              : "Archivo procesado, sin movimientos nuevos.";
             updateToast(toastId, "warn", `${importedMsg} No se pudo conciliar el saldo automáticamente.`);
           }
-        } else {
-          updateToast(toastId, "ok", importedMsg);
         }
       } catch (e) {
         console.error(e);
         updateToast(toastId, "error", "No se pudo leer el archivo. ¿Es el .xls de movimientos del banco?");
       }
     },
-    [transactions, merchantRules, persistTx, pushToast, updateToast]
+    [transactions, merchantRules, persistTx, pushToast, updateToast, accountSettings]
   );
 
   // ---- manual entries ---------------------------------------------------------
