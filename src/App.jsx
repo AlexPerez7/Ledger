@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react
 
 import { TOKENS, DEFAULT_CATEGORIES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "./lib/constants.js";
 import { storage } from "./lib/storage.js";
+import { getAccountSettings, saveAccountSettings } from "./lib/accountSettings.js";
 import { useToasts } from "./lib/useToasts.js";
 import { readFileWithProgress } from "./lib/readFile.js";
 import {
@@ -27,6 +28,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [merchantRules, setMerchantRules] = useState([]);
+  const [accountSettings, setAccountSettings] = useState(null); // { baseBalance, lastSyncDate } | null (todavía no ajustado)
   const [loaded, setLoaded] = useState(false);
   const [syncError, setSyncError] = useState(null);
   const [tab, setTab] = useState("resumen");
@@ -103,6 +105,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
       const rules = await storage.get("merchantRules");
       if (rules) setMerchantRules(JSON.parse(rules.value));
+
+      // null es un estado válido acá (usuario que nunca ajustó su saldo),
+      // así que no cuenta para el syncError de abajo.
+      setAccountSettings(await getAccountSettings());
 
       if (!tx || !cats || !rules) {
         setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
@@ -198,6 +204,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         source: "manual",
         reconciled: false,
         matchedId: null,
+        // se manda solo para uso local/optimista — la columna en Supabase la
+        // pone la propia base de datos (default now()), esto es nada más
+        // para que el saldo dinámico ya lo cuente sin esperar a un reload.
+        createdAt: new Date().toISOString(),
       };
       await persistTx([...transactions, t]);
       setShowManualForm(false);
@@ -332,9 +342,34 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const stats = useMemo(() => {
     const income = monthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
     const expense = monthTx.filter(isRealExpense).reduce((s, t) => s + t.amount, 0);
-    const lastBank = [...transactions].filter((t) => t.source === "bank").sort((a, b) => (a.date > b.date ? -1 : 1))[0];
-    return { income, expense, balance: income + expense, lastKnown: lastBank };
-  }, [monthTx, transactions, isRealExpense]);
+    return { income, expense, balance: income + expense };
+  }, [monthTx, isRealExpense]);
+
+  // Saldo actual = base_balance (lo que el usuario confirmó que tenía al
+  // ajustar) + los movimientos MANUALES agregados después de ese momento —
+  // los importados del banco no suman/restan acá porque ya están reflejados
+  // (o lo estarán) en el próximo ajuste manual del saldo. Se compara por
+  // createdAt (cuándo se cargó el movimiento), no por date (la fecha del
+  // gasto): si ajustás el saldo hoy a las 15:00 y agregás un gasto manual
+  // fechado hoy mismo a las 16:00, comparar por `date` no distinguiría cuál
+  // pasó primero — createdAt sí.
+  const dynamicBalance = useMemo(() => {
+    if (!accountSettings) return null;
+    const syncTime = new Date(accountSettings.lastSyncDate).getTime();
+    const netManualSince = transactions
+      .filter((t) => t.source === "manual" && t.createdAt && new Date(t.createdAt).getTime() > syncTime)
+      .reduce((sum, t) => sum + t.amount, 0);
+    return accountSettings.baseBalance + netManualSince;
+  }, [accountSettings, transactions]);
+
+  const adjustBaseBalance = useCallback(async (newBalance) => {
+    const result = await saveAccountSettings(newBalance);
+    if (result) {
+      setAccountSettings(result);
+      return true;
+    }
+    return false;
+  }, []);
 
   const byCategory = useMemo(() => {
     const map = {};
@@ -461,6 +496,8 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
                 dailySpend={dailySpend} hasTransactions={transactions.length > 0} heroStat={heroStat}
                 insights={insights} pushToast={pushToast}
+                dynamicBalance={dynamicBalance} lastSyncDate={accountSettings?.lastSyncDate}
+                onAdjustBalance={adjustBaseBalance}
               />
             </Suspense>
           </ErrorBoundary>

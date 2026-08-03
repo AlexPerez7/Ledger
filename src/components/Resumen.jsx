@@ -4,10 +4,10 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Legend,
 } from "recharts";
-import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3, ImageDown, Loader2 } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3, ImageDown, Loader2, Pencil, X } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
-import { formatCLP, formatDateDisplay } from "../lib/utils.js";
-import { Panel, EmptyState, StatCard } from "./Shared.jsx";
+import { formatCLP } from "../lib/utils.js";
+import { Panel, EmptyState, StatCard, FieldInput } from "./Shared.jsx";
 import { SpendHeatmap } from "./Heatmap.jsx";
 import { HeroStat } from "./HeroStat.jsx";
 import { Insights } from "./Insights.jsx";
@@ -20,9 +20,19 @@ function fmtMonth(m) {
   return `${MONTH_NAMES[parseInt(mo, 10) - 1]} ${y}`;
 }
 
-export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast }) {
+// lastSyncDate es un timestamp completo (hora incluida), no una fecha simple
+// como las que maneja formatDateDisplay — se muestra con el formato local.
+function formatSyncDate(iso) {
+  return new Date(iso).toLocaleString("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+export function Resumen({
+  stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
+  dynamicBalance, lastSyncDate, onAdjustBalance,
+}) {
   const captureRef = useRef(null);
   const [exporting, setExporting] = useState(false);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
 
   const handleExport = async () => {
     if (!captureRef.current || exporting) return;
@@ -72,10 +82,20 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, 
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
         <StatCard
-          label="Saldo (último dato del banco)"
-          value={stats.lastKnown ? formatCLP(stats.lastKnown.amount) : "—"}
-          sub={stats.lastKnown ? `al ${formatDateDisplay(stats.lastKnown.date)}` : "importa un movimiento del banco"}
+          label="Saldo actual"
+          value={dynamicBalance != null ? formatCLP(dynamicBalance) : "—"}
+          sub={lastSyncDate ? `ajustado el ${formatSyncDate(lastSyncDate)}` : "ajusta tu saldo para verlo actualizado"}
           accent={TOKENS.accent}
+          action={
+            <button
+              onClick={() => setShowAdjustModal(true)}
+              aria-label="Ajustar saldo"
+              title="Ajustar saldo"
+              style={{ background: "none", border: "none", cursor: "pointer", color: TOKENS.textFaint, padding: 0 }}
+            >
+              <Pencil size={13} />
+            </button>
+          }
         />
         <StatCard label="Ingresos" value={formatCLP(stats.income)} icon={ArrowUpRight} accent={TOKENS.income} />
         <StatCard label="Gastos" value={formatCLP(stats.expense)} icon={ArrowDownRight} accent={TOKENS.expense} />
@@ -145,6 +165,66 @@ export function Resumen({ stats, byCategory, byMonth, currentMonth, dailySpend, 
           <SpendHeatmap dailySpend={dailySpend} hasTransactions={hasTransactions} />
         </ErrorBoundary>
       </Panel>
+      </div>
+
+      {showAdjustModal && (
+        <AdjustBalanceModal
+          currentBalance={dynamicBalance}
+          onAdjust={onAdjustBalance}
+          onClose={() => setShowAdjustModal(false)}
+          pushToast={pushToast}
+        />
+      )}
+    </div>
+  );
+}
+
+function AdjustBalanceModal({ currentBalance, onAdjust, onClose, pushToast }) {
+  const [value, setValue] = useState(currentBalance != null ? String(Math.round(currentBalance)) : "");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    const n = parseFloat(value);
+    if (isNaN(n) || saving) return;
+    setSaving(true);
+    const ok = await onAdjust(n);
+    setSaving(false);
+    if (ok) {
+      pushToast?.("ok", "Saldo ajustado correctamente.");
+      onClose();
+    } else {
+      pushToast?.("error", "No se pudo ajustar el saldo. Revisa tu conexión e inténtalo de nuevo.");
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
+        alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
+      }}
+    >
+      <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16, padding: 22, maxWidth: 360, width: "100%" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div className="display" style={{ fontSize: 14.5, fontWeight: 600 }}>Ajustar saldo</div>
+          <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}>
+            <X size={16} />
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: TOKENS.textMuted, marginBottom: 14, lineHeight: 1.4 }}>
+          Ingresa el saldo real de tu cuenta ahora mismo (el que muestra tu banco). Desde este momento, la app suma o resta tus movimientos manuales para mantenerlo actualizado.
+        </div>
+        <FieldInput label="Saldo actual (CLP)" type="number" value={value} onChange={setValue} placeholder="0" style={{ marginBottom: 14 }} />
+        <button
+          onClick={submit}
+          disabled={saving || value === ""}
+          style={{
+            width: "100%", padding: "10px 0", borderRadius: 8, border: "none", cursor: saving ? "default" : "pointer",
+            background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 13, opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {saving ? "Guardando…" : "Guardar saldo"}
+        </button>
       </div>
     </div>
   );

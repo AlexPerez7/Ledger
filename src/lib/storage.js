@@ -30,6 +30,7 @@ const TABLES = {
       source: r.source,
       reconciled: r.reconciled,
       matchedId: r.matched_id,
+      createdAt: r.created_at,
     }),
   },
   categories: {
