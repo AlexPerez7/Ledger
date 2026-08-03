@@ -23,24 +23,30 @@ export async function getAccountSettings() {
 // exacta de la fila más reciente del banco, no al momento de la importación.
 export async function saveAccountSettings(baseBalance, lastSyncDate = new Date().toISOString()) {
   try {
-    // user_id SÍ hay que mandarlo explícito en el payload: con
-    // onConflict: "user_id", PostgREST arma el INSERT ... ON CONFLICT
-    // (user_id) usando solo las columnas presentes en el body. Si user_id no
-    // viene (aunque la columna tenga default auth.uid()), la primera vez
-    // igual inserta bien (no hay fila previa), pero en la segunda llamada ya
-    // existe una fila con ese user_id y el upsert no la detecta como
-    // conflicto — revienta con una violación de unicidad silenciosa
-    // (se cae al catch de abajo). Por eso este bug no aparecía al usar
-    // "Ajustar saldo" por primera vez, solo al reconciliar después.
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
     const userId = userData?.user?.id;
     if (!userId) throw new Error("No hay usuario autenticado");
 
-    const { error } = await supabase
+    // create-or-update explícito en dos pasos en vez de upsert: primero
+    // intenta actualizar la fila del usuario, y si no existía (0 filas
+    // afectadas), recién ahí la crea. Así el ajuste manual funciona sin
+    // errores la primera vez que un usuario guarda su saldo, sin necesitar
+    // que ya exista una fila en account_settings de antes.
+    const { data: updated, error: updateError } = await supabase
       .from("account_settings")
-      .upsert({ user_id: userId, base_balance: baseBalance, last_sync_date: lastSyncDate }, { onConflict: "user_id" });
-    if (error) throw error;
+      .update({ base_balance: baseBalance, last_sync_date: lastSyncDate })
+      .eq("user_id", userId)
+      .select();
+    if (updateError) throw updateError;
+
+    if (!updated || updated.length === 0) {
+      const { error: insertError } = await supabase
+        .from("account_settings")
+        .insert({ user_id: userId, base_balance: baseBalance, last_sync_date: lastSyncDate });
+      if (insertError) throw insertError;
+    }
+
     return { baseBalance, lastSyncDate };
   } catch (e) {
     console.error("No se pudo guardar account_settings en Supabase", e);
