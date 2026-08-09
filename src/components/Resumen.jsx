@@ -114,7 +114,12 @@ export function Resumen({
                     <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}>
                       {byCategory.map((entry) => <Cell key={entry.id} fill={entry.color} stroke={TOKENS.surface} strokeWidth={2} />)}
                     </Pie>
-                    <Tooltip contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => formatCLP(v)} />
+                    <Tooltip
+                      contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }}
+                      itemStyle={{ color: TOKENS.text }}
+                      labelStyle={{ color: TOKENS.text }}
+                      formatter={(v) => formatCLP(v)}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -150,7 +155,13 @@ export function Resumen({
                 <CartesianGrid strokeDasharray="3 3" stroke={TOKENS.border} vertical={false} />
                 <XAxis dataKey="month" tickFormatter={fmtMonth} stroke={TOKENS.textFaint} fontSize={11} />
                 <YAxis stroke={TOKENS.textFaint} fontSize={11} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-                <Tooltip contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }} labelFormatter={fmtMonth} formatter={(v) => formatCLP(v)} />
+                <Tooltip
+                  contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }}
+                  itemStyle={{ color: TOKENS.text }}
+                  labelStyle={{ color: TOKENS.text, marginBottom: 2 }}
+                  labelFormatter={fmtMonth}
+                  formatter={(v) => formatCLP(v)}
+                />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="ingresos" fill={TOKENS.income} radius={[3, 3, 0, 0]} />
                 <Bar dataKey="gastos" fill={TOKENS.expense} radius={[3, 3, 0, 0]} />
