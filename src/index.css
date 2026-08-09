@@ -97,6 +97,10 @@ select:focus-visible {
   display: none;
 }
 
+.fab-add-btn {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .app-main {
     padding: 20px 14px calc(72px + env(safe-area-inset-bottom)) !important;
@@ -183,6 +187,28 @@ select:focus-visible {
     background: var(--color-surface);
     border-top: 1px solid var(--color-border);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .new-record-btn {
+    display: none !important;
+  }
+
+  .fab-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 18px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    z-index: 25;
+    cursor: pointer;
   }
 }
 

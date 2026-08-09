@@ -169,7 +169,7 @@ export function Movimientos({
             <button onClick={() => setShowImportModal(true)} style={actionBtnStyle} title="Importar movimientos del banco desde un .xls">
               <Upload size={13} /> Importar Excel
             </button>
-            <button onClick={() => setShowManualForm((v) => !v)} style={actionBtnStyle} title="Agregar un gasto o ingreso manual">
+            <button onClick={() => setShowManualForm((v) => !v)} className="new-record-btn" style={actionBtnStyle} title="Agregar un gasto o ingreso manual">
               <Plus size={13} /> Nuevo registro
             </button>
           </>
@@ -180,6 +180,17 @@ export function Movimientos({
 
       {showImportModal && (
         <ImportModal onClose={() => setShowImportModal(false)} onFile={(f) => { handleFile(f); setShowImportModal(false); }} />
+      )}
+
+      {hasTransactions && selectedIds.length === 0 && (
+        <button
+          onClick={() => setShowManualForm((v) => !v)}
+          className="fab-add-btn"
+          aria-label="Agregar gasto o ingreso manual"
+          title="Agregar gasto o ingreso manual"
+        >
+          <Plus size={24} />
+        </button>
       )}
 
       <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, overflow: "hidden" }}>
