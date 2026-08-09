@@ -237,7 +237,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         const isHistoric = !isFirstSync && new Date(fileLastSyncDate) < new Date(accountSettings.lastSyncDate);
 
         if (isHistoric) {
-          updateToast(toastId, "warn", "Movimientos procesados. Saldo sin cambios (archivo antiguo).");
+          const importedMsg = imported.length > 0
+            ? `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}.`
+            : "Sin movimientos nuevos (ya estaban todos importados).";
+          updateToast(toastId, "warn", `${importedMsg} Saldo sin cambios — este archivo es más antiguo que tu última conciliación.`);
         } else {
           const settings = await saveAccountSettings(latestRow.saldo, fileLastSyncDate);
           if (settings && !settings.error) {
