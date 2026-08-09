@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Legend,
@@ -38,6 +37,7 @@ export function Resumen({
     if (!captureRef.current || exporting) return;
     setExporting(true);
     try {
+      const { toPng } = await import("html-to-image"); // solo se descarga al exportar el resumen
       const bg = getComputedStyle(document.documentElement).getPropertyValue("--color-bg").trim();
       const dataUrl = await toPng(captureRef.current, { backgroundColor: bg || undefined, pixelRatio: 2, skipFonts: true });
       const link = document.createElement("a");

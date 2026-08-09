@@ -89,7 +89,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const persistTx = useCallback(async (next) => {
     const prev = transactions;
     setTransactions(next);
-    const res = await storage.set("transactions", JSON.stringify(next));
+    const res = await storage.set("transactions", JSON.stringify(next), prev);
     if (!res) {
       setTransactions(prev);
       setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
@@ -101,7 +101,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const persistCats = useCallback(async (next) => {
     const prev = categories;
     setCategories(next);
-    const res = await storage.set("categories", JSON.stringify(next));
+    const res = await storage.set("categories", JSON.stringify(next), prev);
     if (!res) {
       setCategories(prev);
       setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
@@ -112,7 +112,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const persistRules = useCallback(async (next) => {
     const prev = merchantRules;
     setMerchantRules(next);
-    const res = await storage.set("merchantRules", JSON.stringify(next));
+    const res = await storage.set("merchantRules", JSON.stringify(next), prev);
     if (!res) {
       setMerchantRules(prev);
       setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");

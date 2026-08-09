@@ -59,18 +59,19 @@ export const storage = {
     }
   },
 
-  async set(key, value) {
+  // prevItems: el array (forma de app, no fila cruda) que la propia App ya
+  // tenía en memoria antes de este cambio — se usa para diffear localmente
+  // en vez de volver a pedirle la tabla completa a Supabase en cada
+  // guardado. Es seguro: la app ya trata su estado local como la fuente de
+  // verdad (patrón optimista en persistTx/persistCats/persistRules, que
+  // revierte si el guardado falla), así que no hace falta reconfirmar
+  // contra el servidor antes de escribir.
+  async set(key, value, prevItems = []) {
     const spec = TABLES[key];
     if (!spec) return null;
     try {
       const items = JSON.parse(value);
-
-      const { data: existing, error: selError } = await supabase.from(spec.table).select("*");
-      if (selError) throw selError;
-      // comparamos en "forma de app" (fromRow), no la fila cruda de la DB:
-      // así ignoramos columnas que la app no conoce (user_id) y evitamos
-      // falsos positivos por tipos (ej. numeric que vuelve como string).
-      const existingById = new Map(existing.map((r) => [r.id, spec.fromRow(r)]));
+      const existingById = new Map(prevItems.map((item) => [item.id, item]));
 
       // solo mandamos a upsert lo que es nuevo o realmente cambió — en vez
       // de reenviar la tabla completa en cada guardado.
@@ -79,7 +80,7 @@ export const storage = {
         return !prev || !shallowEqual(prev, item);
       });
       const nextIds = new Set(items.map((i) => i.id));
-      const toDelete = existing.map((r) => r.id).filter((id) => !nextIds.has(id));
+      const toDelete = prevItems.map((i) => i.id).filter((id) => !nextIds.has(id));
 
       if (changed.length > 0) {
         const { error: upsertError } = await supabase.from(spec.table).upsert(changed.map(spec.toRow));
