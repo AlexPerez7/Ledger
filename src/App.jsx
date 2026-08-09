@@ -71,6 +71,12 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     setTab("movimientos");
     setShowImportModal(true);
   }, []);
+  // desde el gráfico/leyenda de "Gasto por categoría" en Resumen: salta a
+  // Movimientos ya filtrado por esa categoría (mismo mes seleccionado).
+  const goToCategoryMovements = useCallback((categoryId) => {
+    setCatFilter(categoryId);
+    setTab("movimientos");
+  }, []);
 
   const catMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, { ...c, icon: resolveCategoryIcon(c) }])),
@@ -618,6 +624,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 insights={insights} pushToast={pushToast}
                 dynamicBalance={dynamicBalance} lastSyncDate={accountSettings?.lastSyncDate}
                 onAdjustBalance={adjustBaseBalance}
+                onCategoryClick={goToCategoryMovements}
               />
             </Suspense>
           </ErrorBoundary>

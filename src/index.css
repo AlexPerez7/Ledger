@@ -102,6 +102,10 @@ select:focus-visible {
   outline-offset: 1px;
 }
 
+.category-legend-row:hover {
+  background: var(--color-surface-alt) !important;
+}
+
 /* ---- responsive layout — breakpoint at 640px ---------------------------- */
 
 .bottom-tab-nav {

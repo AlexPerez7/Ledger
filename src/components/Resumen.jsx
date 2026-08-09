@@ -28,7 +28,7 @@ function formatSyncDate(iso) {
 
 export function Resumen({
   stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
-  dynamicBalance, lastSyncDate, onAdjustBalance,
+  dynamicBalance, lastSyncDate, onAdjustBalance, onCategoryClick,
 }) {
   const captureRef = useRef(null);
   const [exporting, setExporting] = useState(false);
@@ -111,7 +111,11 @@ export function Resumen({
               <div className="category-chart-pie" style={{ width: "55%", flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
-                    <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}>
+                    <Pie
+                      data={byCategory} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}
+                      onClick={onCategoryClick ? (entry) => onCategoryClick(entry.id) : undefined}
+                      style={{ cursor: onCategoryClick ? "pointer" : "default" }}
+                    >
                       {byCategory.map((entry) => <Cell key={entry.id} fill={entry.color} stroke={TOKENS.surface} strokeWidth={2} />)}
                     </Pie>
                     <Tooltip
@@ -127,7 +131,17 @@ export function Resumen({
                 {byCategory.slice(0, 6).map((c) => {
                   const CatIcon = c.icon;
                   return (
-                    <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5 }}>
+                    <button
+                      key={c.id}
+                      onClick={() => onCategoryClick?.(c.id)}
+                      title={`Ver movimientos de ${c.name}`}
+                      className="category-legend-row"
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5,
+                        background: "none", border: "none", padding: "4px 6px", margin: "0 -6px", borderRadius: 7,
+                        width: "calc(100% + 12px)", cursor: onCategoryClick ? "pointer" : "default", textAlign: "left",
+                      }}
+                    >
                       <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted }}>
                         <span style={{
                           width: 18, height: 18, borderRadius: 5, background: `${c.color}22`, display: "flex",
@@ -138,7 +152,7 @@ export function Resumen({
                         {c.name}
                       </div>
                       <span className="mono" style={{ color: TOKENS.text }}>{formatCLP(c.value)}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
