@@ -23,6 +23,10 @@ export function Movimientos({
   recentImportIds = [], onClearRecentImports,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
+  // se calcula una sola vez acá arriba y se pasa a cada TxRow — antes cada
+  // fila llamaba useIsMobile() por su cuenta, lo que con una lista larga
+  // significaba un listener de matchMedia por fila en vez de uno solo.
+  const isMobile = useIsMobile();
   // filtro opcional para revisar SOLO lo que trajo la última importación,
   // sin tener que buscarlo a mano en la lista completa.
   const [onlyRecent, setOnlyRecent] = useState(false);
@@ -289,6 +293,7 @@ export function Movimientos({
                   selected={selectedIds.includes(t.id)}
                   onToggleSelect={toggleSelectOne}
                   isRecent={recentSet.has(t.id)}
+                  isMobile={isMobile}
                 />
               ))}
             </div>
@@ -461,12 +466,11 @@ function ImportModal({ onClose, onFile }) {
   );
 }
 
-function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect, isRecent }) {
+function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect, isRecent, isMobile }) {
   const [editing, setEditing] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const cat = getCat(t.category);
   const CatIcon = cat.icon;
-  const isMobile = useIsMobile();
   const swipeControls = useAnimation();
   const closeSwipe = () => swipeControls.start({ x: 0, transition: { duration: 0.18 } });
 
@@ -481,6 +485,8 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
     if (info.offset.x < -SWIPE_ACTION_WIDTH / 2) swipeControls.start({ x: -SWIPE_ACTION_WIDTH, transition: { duration: 0.18 } });
     else closeSwipe();
   };
+
+  const RowGrid = isMobile ? motion.div : "div";
 
   return (
     <div style={{ borderBottom: isLast ? "none" : `1px solid ${TOKENS.border}` }}>
@@ -503,18 +509,24 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
             </div>
           </div>
         )}
-        <motion.div
+        <RowGrid
           className="txrow-grid"
           style={{
             display: "grid", gridTemplateColumns: "20px 1fr 170px 130px auto", alignItems: "center", gap: 10,
             padding: "11px 16px", background: TOKENS.surface, touchAction: "pan-y", position: "relative",
             boxShadow: isRecent ? `inset 3px 0 0 ${TOKENS.accent}` : "none",
           }}
-          drag={isMobile ? "x" : false}
-          dragConstraints={{ left: -SWIPE_ACTION_WIDTH, right: 0 }}
-          dragElastic={0.06}
-          animate={swipeControls}
-          onDragEnd={handleDragEnd}
+          // el swipe-to-action solo existe en mobile — en desktop esta fila
+          // es un <div> normal, sin el overhead de framer-motion por fila
+          // (con listas largas, montar motion.div en todas las filas se
+          // notaba al hacer scroll aunque el drag estuviera desactivado).
+          {...(isMobile ? {
+            drag: "x",
+            dragConstraints: { left: -SWIPE_ACTION_WIDTH, right: 0 },
+            dragElastic: 0.06,
+            animate: swipeControls,
+            onDragEnd: handleDragEnd,
+          } : {})}
         >
         <div className="tx-check">
           <input
@@ -560,7 +572,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
           </button>
           <ConfirmDeleteButton onConfirm={handleDelete} text="¿Eliminar este movimiento?" title="Eliminar movimiento" size={13} />
         </div>
-        </motion.div>
+        </RowGrid>
       </div>
       </div>
       {editing && <TxEditPanel t={t} categories={categories} onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }} onCancel={() => setEditing(false)} />}
