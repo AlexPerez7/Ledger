@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
@@ -67,15 +68,41 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
 }
 
 export function MonthBar({ months, monthFilter, setMonthFilter }) {
-  if (months.length === 0) return null;
+  const [yearOverride, setYearOverride] = useState(null);
   const names = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-  const label = (m) => { const [y, mo] = m.split("-"); return `${names[parseInt(mo, 10) - 1]} ${y}`; };
+  const label = (m) => { const [, mo] = m.split("-"); return names[parseInt(mo, 10) - 1]; };
+  const years = useMemo(() => Array.from(new Set(months.map((m) => m.split("-")[0]))).sort().reverse(), [months]);
+
+  if (months.length === 0) return null;
+
+  const activeYear = monthFilter !== "all" ? monthFilter.split("-")[0] : years[0];
+  const selectedYear = yearOverride && years.includes(yearOverride) ? yearOverride : activeYear;
+  const monthsInYear = months.filter((m) => m.startsWith(selectedYear));
+
   return (
-    <div style={{ display: "flex", gap: 8, marginBottom: 22, flexWrap: "wrap" }}>
-      <button onClick={() => setMonthFilter("all")} style={pillStyle(monthFilter === "all")}>Todo</button>
-      {months.map((m) => (
-        <button key={m} onClick={() => setMonthFilter(m)} style={pillStyle(monthFilter === m)}>{label(m)}</button>
-      ))}
+    <div style={{ marginBottom: 22 }}>
+      {years.length > 1 && (
+        <div style={{ display: "flex", gap: 4, background: TOKENS.surfaceAlt, padding: 4, borderRadius: 10, border: `1px solid ${TOKENS.border}`, width: "fit-content", marginBottom: 10 }}>
+          {years.map((y) => {
+            const active = y === selectedYear;
+            return (
+              <button key={y} onClick={() => setYearOverride(y)} style={{
+                padding: "5px 12px", borderRadius: 7, border: "none", cursor: "pointer",
+                fontSize: 12.5, fontWeight: 500,
+                background: active ? TOKENS.bg : "transparent", color: active ? TOKENS.text : TOKENS.textMuted,
+              }}>
+                {y}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button onClick={() => setMonthFilter("all")} style={pillStyle(monthFilter === "all")}>Todo</button>
+        {monthsInYear.map((m) => (
+          <button key={m} onClick={() => setMonthFilter(m)} style={pillStyle(monthFilter === m)}>{label(m)}</button>
+        ))}
+      </div>
     </div>
   );
 }
