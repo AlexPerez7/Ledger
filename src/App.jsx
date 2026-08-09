@@ -588,6 +588,24 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     };
   }, [transactions, currentMonth]);
 
+  // "salud" de conciliación por mes, para el selector de meses en la
+  // pestaña Conciliación (✓ verde: todo lo manual calzó / ⚠ ámbar: hay
+  // reporte del banco pero algo manual sigue sin calzar). Sin badge si el
+  // mes no tiene movimientos manuales, o si aún no se importa el reporte
+  // del banco de ese mes (nada que evaluar todavía).
+  const monthHealth = useMemo(() => {
+    const map = {};
+    for (const mk of months) {
+      const inMonth = transactions.filter((t) => monthKey(t.date) === mk);
+      const manuals = inMonth.filter((t) => t.source === "manual");
+      if (manuals.length === 0) continue;
+      const bankExists = inMonth.some((t) => t.source === "bank");
+      if (!bankExists) continue;
+      map[mk] = manuals.some((t) => !t.reconciled) ? "warn" : "ok";
+    }
+    return map;
+  }, [transactions, months]);
+
   if (!loaded) {
     return <AppShellSkeleton />;
   }
@@ -609,7 +627,12 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             </button>
           </div>
         )}
-        {tab !== "categorias" && <MonthBar months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter} />}
+        {tab !== "categorias" && (
+          <MonthBar
+            months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter}
+            monthHealth={tab === "conciliacion" ? monthHealth : undefined}
+          />
+        )}
 
         {tab === "categorias" && (
           <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onColorChange={changeCategoryColor} onToggleExpense={toggleCategoryExpense} />

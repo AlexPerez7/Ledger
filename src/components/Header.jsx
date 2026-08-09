@@ -146,7 +146,7 @@ export function BottomNav({ tab, setTab, onManual, onImport }) {
   );
 }
 
-export function MonthBar({ months, monthFilter, setMonthFilter }) {
+export function MonthBar({ months, monthFilter, setMonthFilter, monthHealth }) {
   const [yearOverride, setYearOverride] = useState(null);
   const names = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
   const label = (m) => { const [, mo] = m.split("-"); return names[parseInt(mo, 10) - 1]; };
@@ -178,9 +178,25 @@ export function MonthBar({ months, monthFilter, setMonthFilter }) {
       )}
       <div className="chip-scroll-row" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button onClick={() => setMonthFilter("all")} style={pillStyle(monthFilter === "all")}>Todo</button>
-        {monthsInYear.map((m) => (
-          <button key={m} onClick={() => setMonthFilter(m)} style={pillStyle(monthFilter === m)}>{label(m)}</button>
-        ))}
+        {monthsInYear.map((m) => {
+          const health = monthHealth?.[m];
+          return (
+            <button key={m} onClick={() => setMonthFilter(m)} style={pillStyle(monthFilter === m)}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                {label(m)}
+                {health && (
+                  <span
+                    title={health === "warn" ? "Con movimientos manuales sin conciliar" : "Mes conciliado"}
+                    style={{
+                      width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                      background: health === "warn" ? TOKENS.pending : TOKENS.income,
+                    }}
+                  />
+                )}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
