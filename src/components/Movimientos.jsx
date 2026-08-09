@@ -19,7 +19,7 @@ const actionBtnStyle = {
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, showImportModal, setShowImportModal,
-  addManual, handleFile, pushToast, onBulkDelete, onBulkChangeCategory,
+  addManual, handleFile, isImporting, pushToast, onBulkDelete, onBulkChangeCategory,
   recentImportIds = [], onClearRecentImports,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
@@ -131,7 +131,7 @@ export function Movimientos({
           junto a la búsqueda. */}
       {!hasTransactions && (
         <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
-          <ImportDropzone onFile={handleFile} />
+          <ImportDropzone onFile={handleFile} disabled={isImporting} />
           <button onClick={() => setShowManualForm(true)} style={{
             border: `1.5px solid ${TOKENS.border}`, borderRadius: 12, padding: "18px 16px", background: TOKENS.surface,
             display: "flex", alignItems: "center", gap: 12, cursor: "pointer", color: TOKENS.text, textAlign: "left",
@@ -181,8 +181,13 @@ export function Movimientos({
         </select>
         {hasTransactions && (
           <>
-            <button onClick={() => setShowImportModal(true)} style={actionBtnStyle} title="Importar movimientos del banco desde un .xls o una cartola .pdf">
-              <Upload size={13} /> Importar Excel
+            <button
+              onClick={() => setShowImportModal(true)}
+              disabled={isImporting}
+              style={{ ...actionBtnStyle, cursor: isImporting ? "default" : "pointer", opacity: isImporting ? 0.6 : 1 }}
+              title={isImporting ? "Ya hay una importación en curso…" : "Importar movimientos del banco desde un .xls o una cartola .pdf"}
+            >
+              {isImporting ? <Loader2 size={13} className="spin" /> : <Upload size={13} />} Importar Excel
             </button>
             <button onClick={() => setShowManualForm((v) => !v)} className="new-record-btn" style={actionBtnStyle} title="Agregar un gasto o ingreso manual">
               <Plus size={13} /> Nuevo registro
@@ -419,26 +424,34 @@ function BulkActionsBar({ count, categories, onDelete, onChangeCategory, onClose
 // Zona de drag & drop para el .xls del banco — se usa tanto en la invitación
 // grande de primer uso como dentro del modal de importar (mismo componente,
 // misma lógica, para no duplicar el manejo de drag/drop).
-function ImportDropzone({ onFile }) {
+function ImportDropzone({ onFile, disabled }) {
   const [dragOver, setDragOver] = useState(false);
   return (
     <label
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragOver={(e) => { if (disabled) return; e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        if (disabled) return;
+        const f = e.dataTransfer.files[0];
+        if (f) onFile(f);
+      }}
       style={{
         border: `1.5px dashed ${dragOver ? TOKENS.accent : TOKENS.border}`, borderRadius: 12, padding: "18px 16px",
-        display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
-        background: dragOver ? "var(--tint-accent-soft)" : TOKENS.surface,
+        display: "flex", alignItems: "center", gap: 12, cursor: disabled ? "default" : "pointer",
+        background: dragOver ? "var(--tint-accent-soft)" : TOKENS.surface, opacity: disabled ? 0.6 : 1,
       }}
     >
-      <input type="file" accept=".xls,.xlsx,.pdf" style={{ display: "none" }} onChange={(e) => e.target.files[0] && onFile(e.target.files[0])} />
+      <input type="file" accept=".xls,.xlsx,.pdf" disabled={disabled} style={{ display: "none" }} onChange={(e) => e.target.files[0] && onFile(e.target.files[0])} />
       <div style={{ width: 34, height: 34, borderRadius: 8, background: TOKENS.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Upload size={16} color={TOKENS.accent} />
+        {disabled ? <Loader2 size={16} color={TOKENS.accent} className="spin" /> : <Upload size={16} color={TOKENS.accent} />}
       </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 500 }}>Subir movimientos del banco</div>
-        <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>Arrastra el .xls de reportCollection o la cartola en .pdf, o haz clic para elegirlo</div>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>{disabled ? "Procesando archivo…" : "Subir movimientos del banco"}</div>
+        <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>
+          {disabled ? "Espera a que termine antes de subir otro." : "Arrastra el .xls de reportCollection o la cartola en .pdf, o haz clic para elegirlo"}
+        </div>
       </div>
     </label>
   );

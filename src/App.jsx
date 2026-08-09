@@ -43,6 +43,15 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const { toasts, push: pushToast, update: updateToast, dismiss: dismissToast } = useToasts();
   const [showManualForm, setShowManualForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  // candado contra doble importación: si el usuario suelta/selecciona el
+  // archivo dos veces antes de que la primera pasada termine de guardar,
+  // dos llamadas a handleFile corren en paralelo con la MISMA foto de
+  // `transactions` (closures viejas) — ninguna ve lo que la otra ya
+  // importó, así que ambas arman su propio lote de filas nuevas (con id
+  // al azar cada una) y las dos terminan guardándose en Supabase: duplicados
+  // reales, aunque el chequeo de "ya existe" en memoria diga que todo bien.
+  const importingRef = useRef(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return localStorage.getItem(ONBOARDING_KEY) !== "1"; } catch { return false; }
   });
@@ -138,6 +147,9 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   // ---- import xls/pdf ---------------------------------------------------------
   const handleFile = useCallback(
     async (file) => {
+      if (importingRef.current) return;
+      importingRef.current = true;
+      setIsImporting(true);
       const toastId = pushToast("loading", "Leyendo archivo…", 0);
       try {
         const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
@@ -278,6 +290,9 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       } catch (e) {
         console.error(e);
         updateToast(toastId, "error", "No se pudo leer el archivo. ¿Es el .xls de movimientos del banco?");
+      } finally {
+        importingRef.current = false;
+        setIsImporting(false);
       }
     },
     [transactions, merchantRules, persistTx, pushToast, updateToast, accountSettings]
@@ -624,6 +639,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 showImportModal={showImportModal} setShowImportModal={setShowImportModal}
                 addManual={addManual}
                 handleFile={handleFile}
+                isImporting={isImporting}
                 pushToast={pushToast}
                 onBulkDelete={bulkDeleteTransactions}
                 onBulkChangeCategory={bulkChangeCategory}
