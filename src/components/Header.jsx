@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon, Plus, PenLine, Upload } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
 
@@ -68,26 +68,71 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
   );
 }
 
-export function BottomNav({ tab, setTab }) {
+function BottomTabButton({ it, tab, setTab }) {
+  const Icon = it.icon;
+  const active = tab === it.id;
+  return (
+    <button
+      onClick={() => setTab(it.id)}
+      aria-label={it.label}
+      aria-current={active ? "page" : undefined}
+      className="bottom-tab-btn"
+      style={{ color: active ? TOKENS.text : TOKENS.textFaint }}
+    >
+      <Icon size={20} strokeWidth={active ? 2.3 : 1.8} />
+      <span>{it.label}</span>
+    </button>
+  );
+}
+
+export function BottomNav({ tab, setTab, onManual, onImport }) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef(null);
+  const sheetRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e) => {
+      if (sheetRef.current?.contains(e.target) || btnRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const pick = (fn) => { setOpen(false); fn(); };
+
   return (
     <nav className="bottom-tab-nav" aria-label="Navegación principal">
-      {TAB_ITEMS.map((it) => {
-        const Icon = it.icon;
-        const active = tab === it.id;
-        return (
-          <button
-            key={it.id}
-            onClick={() => setTab(it.id)}
-            aria-label={it.label}
-            aria-current={active ? "page" : undefined}
-            className="bottom-tab-btn"
-            style={{ color: active ? TOKENS.text : TOKENS.textFaint }}
-          >
-            <Icon size={20} strokeWidth={active ? 2.3 : 1.8} />
-            <span>{it.label}</span>
-          </button>
-        );
-      })}
+      <BottomTabButton it={TAB_ITEMS[0]} tab={tab} setTab={setTab} />
+      <BottomTabButton it={TAB_ITEMS[1]} tab={tab} setTab={setTab} />
+      <div className="bottom-tab-center">
+        <button
+          ref={btnRef}
+          className="bottom-add-btn"
+          aria-label="Agregar movimiento"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <Plus size={24} />
+        </button>
+        {open && (
+          <div ref={sheetRef} className="add-sheet" role="menu">
+            <button role="menuitem" className="add-sheet-btn" onClick={() => pick(onManual)}>
+              <PenLine size={16} /> Manual
+            </button>
+            <button role="menuitem" className="add-sheet-btn" onClick={() => pick(onImport)}>
+              <Upload size={16} /> Subir archivo del banco
+            </button>
+          </div>
+        )}
+      </div>
+      <BottomTabButton it={TAB_ITEMS[2]} tab={tab} setTab={setTab} />
     </nav>
   );
 }

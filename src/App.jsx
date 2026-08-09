@@ -38,6 +38,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const [catFilter, setCatFilter] = useState("all");
   const { toasts, push: pushToast, update: updateToast, dismiss: dismissToast } = useToasts();
   const [showManualForm, setShowManualForm] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [showCatManager, setShowCatManager] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return localStorage.getItem(ONBOARDING_KEY) !== "1"; } catch { return false; }
@@ -45,6 +46,18 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const dismissOnboarding = useCallback(() => {
     try { localStorage.setItem(ONBOARDING_KEY, "1"); } catch { /* localStorage puede fallar en modo privado */ }
     setShowOnboarding(false);
+  }, []);
+
+  // el "+" central del nav inferior vive fuera de la pestaña Movimientos —
+  // ambas opciones abren el formulario/modal que ya existen ahí, así que
+  // primero cambian a esa pestaña para que se puedan mostrar.
+  const openManualEntry = useCallback(() => {
+    setTab("movimientos");
+    setShowManualForm(true);
+  }, []);
+  const openImportFlow = useCallback(() => {
+    setTab("movimientos");
+    setShowImportModal(true);
   }, []);
 
   const catMap = useMemo(
@@ -581,6 +594,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 saveTxEdit={saveTxEdit}
                 deleteTransaction={deleteTransaction}
                 showManualForm={showManualForm} setShowManualForm={setShowManualForm}
+                showImportModal={showImportModal} setShowImportModal={setShowImportModal}
                 addManual={addManual}
                 handleFile={handleFile}
                 pushToast={pushToast}
@@ -598,7 +612,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         )}
       </main>
 
-      <BottomNav tab={tab} setTab={setTab} />
+      <BottomNav tab={tab} setTab={setTab} onManual={openManualEntry} onImport={openImportFlow} />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
     </div>

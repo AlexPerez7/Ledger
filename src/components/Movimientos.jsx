@@ -18,11 +18,10 @@ const actionBtnStyle = {
 
 export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
-  saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, addManual, handleFile, pushToast,
-  onBulkDelete, onBulkChangeCategory,
+  saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, showImportModal, setShowImportModal,
+  addManual, handleFile, pushToast, onBulkDelete, onBulkChangeCategory,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
 
   // Selección múltiple: por ahora solo rastrea IDs elegidos (base para
   // futuras acciones masivas — categorizar/borrar en lote, etc.), sin
@@ -180,17 +179,6 @@ export function Movimientos({
 
       {showImportModal && (
         <ImportModal onClose={() => setShowImportModal(false)} onFile={(f) => { handleFile(f); setShowImportModal(false); }} />
-      )}
-
-      {hasTransactions && selectedIds.length === 0 && (
-        <button
-          onClick={() => setShowManualForm((v) => !v)}
-          className="fab-add-btn"
-          aria-label="Agregar gasto o ingreso manual"
-          title="Agregar gasto o ingreso manual"
-        >
-          <Plus size={24} />
-        </button>
       )}
 
       <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, overflow: "hidden" }}>
