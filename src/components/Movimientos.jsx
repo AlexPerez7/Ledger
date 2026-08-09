@@ -143,7 +143,7 @@ export function Movimientos({
               disabled={filteredTx.length === 0}
               aria-label={allVisibleSelected ? "Deseleccionar todo" : "Seleccionar todo"}
               title={allVisibleSelected ? "Deseleccionar todo" : "Seleccionar todo"}
-              style={{ accentColor: TOKENS.accent, cursor: filteredTx.length === 0 ? "default" : "pointer", width: 15, height: 15 }}
+              style={{ accentColor: TOKENS.accent, cursor: filteredTx.length === 0 ? "default" : "pointer", width: 18, height: 18 }}
             />
             {selectedIds.length > 0 && (
               <span style={{ fontSize: 12, color: TOKENS.textMuted, whiteSpace: "nowrap" }}>
@@ -477,7 +477,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
             checked={selected}
             onChange={() => onToggleSelect(t.id)}
             aria-label={`Seleccionar movimiento: ${t.alias || t.description}`}
-            style={{ accentColor: TOKENS.accent, cursor: "pointer", width: 15, height: 15 }}
+            style={{ accentColor: TOKENS.accent, cursor: "pointer", width: 18, height: 18 }}
           />
         </div>
         <div className="tx-desc" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -505,7 +505,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
           {formatCLP(t.amount)}
         </div>
         <div className="tx-actions" style={{ display: "flex" }}>
-          <button onClick={() => setEditing((v) => !v)} aria-label={editing ? "Cerrar edición" : "Editar movimiento"} title="Editar" style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 4 }}>
+          <button onClick={() => setEditing((v) => !v)} aria-label={editing ? "Cerrar edición" : "Editar movimiento"} title="Editar" style={{ background: "none", border: "none", cursor: "pointer", color: editing ? TOKENS.accent : TOKENS.textFaint, padding: 8 }}>
             <Pencil size={13} />
           </button>
           <ConfirmDeleteButton onConfirm={handleDelete} text="¿Eliminar este movimiento?" title="Eliminar movimiento" size={13} />

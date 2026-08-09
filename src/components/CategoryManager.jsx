@@ -38,12 +38,12 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   aria-label={`Cambiar ícono de ${c.label}`}
                   aria-expanded={pickerOpen}
                   style={{
-                    width: 22, height: 22, borderRadius: 6, background: `${c.color}22`, display: "flex",
+                    width: 32, height: 32, borderRadius: 8, background: `${c.color}22`, display: "flex",
                     alignItems: "center", justifyContent: "center", flexShrink: 0, border: pickerOpen ? `1px solid ${c.color}` : "1px solid transparent",
                     cursor: "pointer", padding: 0,
                   }}
                 >
-                  <CatIcon size={13} color={c.color} />
+                  <CatIcon size={16} color={c.color} />
                 </button>
                 <input
                   defaultValue={c.label}
@@ -78,12 +78,12 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                         title={name}
                         onClick={() => { onIconChange(c.id, name); setPickerFor(null); }}
                         style={{
-                          width: 26, height: 26, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
+                          width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
                           background: selected ? `${c.color}33` : "transparent",
                           border: `1px solid ${selected ? c.color : TOKENS.border}`, cursor: "pointer", padding: 0,
                         }}
                       >
-                        <OptionIcon size={13} color={selected ? c.color : TOKENS.textMuted} />
+                        <OptionIcon size={16} color={selected ? c.color : TOKENS.textMuted} />
                       </button>
                     );
                   })}
