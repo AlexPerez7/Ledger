@@ -4,7 +4,7 @@ import {
   CartesianGrid, Legend,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3, ImageDown, Loader2, Pencil, X } from "lucide-react";
-import { TOKENS } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon } from "../lib/constants.js";
 import { formatCLP } from "../lib/utils.js";
 import { Panel, EmptyState, StatCard, FieldInput } from "./Shared.jsx";
 import { SpendHeatmap } from "./Heatmap.jsx";
@@ -26,12 +26,27 @@ function formatSyncDate(iso) {
 }
 
 export function Resumen({
-  stats, byCategory, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
+  stats, byCategory, categories, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
   dynamicBalance, lastSyncDate, onAdjustBalance, onCategoryClick,
 }) {
   const captureRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+
+  // solo categorías con presupuesto definido — el gasto puede venir de
+  // byCategory (ya calculado para el pie) o ser 0 si todavía no hay
+  // movimientos ahí este mes (byCategory no incluye categorías sin gasto).
+  const budgetedCategories = (categories || [])
+    .filter((c) => c.budget != null && c.budget > 0)
+    .map((c) => ({
+      id: c.id,
+      name: c.label,
+      color: c.color,
+      icon: resolveCategoryIcon(c),
+      budget: c.budget,
+      spent: byCategory.find((bc) => bc.id === c.id)?.value || 0,
+    }))
+    .sort((a, b) => b.spent / b.budget - a.spent / a.budget);
 
   const handleExport = async () => {
     if (!captureRef.current || exporting) return;
@@ -184,6 +199,50 @@ export function Resumen({
           )}
         </Panel>
       </div>
+
+      {budgetedCategories.length > 0 && (
+        <Panel title={`Presupuestos${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {budgetedCategories.map((c) => {
+              const pct = Math.min(100, (c.spent / c.budget) * 100);
+              const over = c.spent > c.budget;
+              const barColor = over ? TOKENS.expense : pct >= 75 ? TOKENS.pending : TOKENS.income;
+              const CatIcon = c.icon;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => onCategoryClick?.(c.id)}
+                  title={`Ver movimientos de ${c.name}`}
+                  style={{ background: "none", border: "none", padding: 0, textAlign: "left", width: "100%", cursor: onCategoryClick ? "pointer" : "default" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12.5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.text }}>
+                      <span style={{
+                        width: 18, height: 18, borderRadius: 5, background: `${c.color}22`, display: "flex",
+                        alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      }}>
+                        <CatIcon size={11} color={c.color} />
+                      </span>
+                      {c.name}
+                    </div>
+                    <span className="mono" style={{ color: over ? TOKENS.expense : TOKENS.textMuted }}>
+                      {formatCLP(c.spent)} <span style={{ color: TOKENS.textFaint }}>/ {formatCLP(c.budget)}</span>
+                    </span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, background: TOKENS.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 3 }} />
+                  </div>
+                  {over && (
+                    <div style={{ fontSize: 11, color: TOKENS.expense, marginTop: 4 }}>
+                      {formatCLP(c.spent - c.budget)} sobre el presupuesto
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
 
       <Panel title="Actividad de gasto diaria">
         <ErrorBoundary>

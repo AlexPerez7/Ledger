@@ -378,13 +378,18 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     (label, icon, color) => {
       const id = "cat_" + uid();
       const resolvedColor = color || PALETTE[categories.length % PALETTE.length];
-      persistCats([...categories, { id, label, color: resolvedColor, icon: icon || "Shapes", excludeFromExpense: false }]);
+      persistCats([...categories, { id, label, color: resolvedColor, icon: icon || "Shapes", excludeFromExpense: false, budget: null }]);
     },
     [categories, persistCats]
   );
   const renameCategory = useCallback((id, label) => { persistCats(categories.map((c) => (c.id === id ? { ...c, label } : c))); }, [categories, persistCats]);
   const changeCategoryIcon = useCallback((id, icon) => { persistCats(categories.map((c) => (c.id === id ? { ...c, icon } : c))); }, [categories, persistCats]);
   const changeCategoryColor = useCallback((id, color) => { persistCats(categories.map((c) => (c.id === id ? { ...c, color } : c))); }, [categories, persistCats]);
+  // budget null/0 = sin presupuesto definido para esa categoría
+  const changeCategoryBudget = useCallback(
+    (id, budget) => { persistCats(categories.map((c) => (c.id === id ? { ...c, budget: budget > 0 ? budget : null } : c))); },
+    [categories, persistCats]
+  );
   const toggleCategoryExpense = useCallback(
     (id) => { persistCats(categories.map((c) => (c.id === id ? { ...c, excludeFromExpense: !c.excludeFromExpense } : c))); },
     [categories, persistCats]
@@ -685,14 +690,18 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         )}
 
         {tab === "categorias" && (
-          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onColorChange={changeCategoryColor} onToggleExpense={toggleCategoryExpense} />
+          <CategoryManager
+            categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory}
+            onIconChange={changeCategoryIcon} onColorChange={changeCategoryColor} onToggleExpense={toggleCategoryExpense}
+            onBudgetChange={changeCategoryBudget}
+          />
         )}
 
         {tab === "resumen" && (
           <ErrorBoundary>
             <Suspense fallback={<ResumenSkeleton />}>
               <Resumen
-                stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
+                stats={stats} byCategory={byCategory} categories={categories} byMonth={byMonth} currentMonth={currentMonth}
                 dailySpend={dailySpend} hasTransactions={transactions.length > 0} heroStat={heroStat}
                 insights={insights} pushToast={pushToast}
                 dynamicBalance={dynamicBalance} lastSyncDate={accountSettings?.lastSyncDate}

@@ -35,8 +35,16 @@ const TABLES = {
   },
   categories: {
     table: "categories",
-    toRow: (c) => ({ id: c.id, label: c.label, color: c.color, icon: c.icon, exclude_from_expense: !!c.excludeFromExpense }),
-    fromRow: (r) => ({ id: r.id, label: r.label, color: r.color, icon: r.icon, excludeFromExpense: !!r.exclude_from_expense }),
+    toRow: (c) => ({
+      id: c.id, label: c.label, color: c.color, icon: c.icon,
+      exclude_from_expense: !!c.excludeFromExpense,
+      budget: c.budget != null ? c.budget : null,
+    }),
+    fromRow: (r) => ({
+      id: r.id, label: r.label, color: r.color, icon: r.icon,
+      excludeFromExpense: !!r.exclude_from_expense,
+      budget: r.budget != null ? Number(r.budget) : null,
+    }),
   },
   merchantRules: {
     table: "merchant_rules",

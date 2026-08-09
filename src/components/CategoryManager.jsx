@@ -2,14 +2,14 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "../lib/constants.js";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
-import { ToggleSwitch } from "./Shared.jsx";
+import { ToggleSwitch, FieldInput } from "./Shared.jsx";
 
 // Los ingresos son montos positivos: el filtro de gasto (t.amount < 0) ya los
 // excluye siempre, sin importar este flag — mostrar el interruptor ahí sería
 // un control que no hace nada, así que se deshabilita para esa categoría.
 const INCOME_CATEGORY_ID = "ingreso";
 
-export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense }) {
+export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange }) {
   const [newLabel, setNewLabel] = useState("");
   const [newIcon, setNewIcon] = useState("Shapes");
   const [newColor, setNewColor] = useState(PALETTE[0]);
@@ -81,8 +81,10 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                 <AppearancePicker
                   color={c.color}
                   icon={c.icon || "Shapes"}
+                  budget={c.budget}
                   onColorChange={(color) => onColorChange(c.id, color)}
                   onIconChange={(icon) => onIconChange(c.id, icon)}
+                  onBudgetChange={(budget) => onBudgetChange(c.id, budget)}
                   onClose={() => setPickerFor(null)}
                 />
               )}
@@ -137,7 +139,8 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
 // selector combinado de color + ícono — se usa tanto para editar una
 // categoría existente como para la que se está creando, así ambos flujos
 // tienen la misma experiencia.
-function AppearancePicker({ color, icon, onColorChange, onIconChange, onClose }) {
+function AppearancePicker({ color, icon, budget, onColorChange, onIconChange, onBudgetChange, onClose }) {
+  const [budgetInput, setBudgetInput] = useState(budget != null ? String(budget) : "");
   return (
     <div style={{
       marginTop: 8, padding: 10, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8,
@@ -188,6 +191,20 @@ function AppearancePicker({ color, icon, onColorChange, onIconChange, onClose })
           );
         })}
       </div>
+
+      {onBudgetChange && (
+        <>
+          <div style={{ width: "100%", height: 1, background: TOKENS.border, margin: "12px 0" }} />
+          <FieldInput
+            label="Presupuesto mensual (CLP, opcional)"
+            type="number"
+            value={budgetInput}
+            onChange={setBudgetInput}
+            onBlur={() => onBudgetChange(budgetInput === "" ? null : parseFloat(budgetInput))}
+            placeholder="Sin límite"
+          />
+        </>
+      )}
     </div>
   );
 }

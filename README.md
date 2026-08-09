@@ -120,6 +120,7 @@ create table categories (
   color text not null,
   icon text,
   exclude_from_expense boolean not null default false,
+  budget numeric, -- presupuesto mensual opcional; null = sin límite definido
   user_id uuid not null default auth.uid() references auth.users (id),
   primary key (id, user_id)
 );
