@@ -192,6 +192,14 @@ select:focus-visible {
     background: var(--color-surface);
     border-top: 1px solid var(--color-border);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    /* en páginas largas (ej. Categorías, con muchas filas) algunos
+       navegadores móviles "despegan" momentáneamente los elementos con
+       position:fixed durante el scroll con inercia, mostrándolos más abajo
+       y cortados hasta que el scroll termina de asentarse — forzar su
+       propia capa de composición (GPU) evita ese salto visual. */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
   }
 
   .new-record-btn {
