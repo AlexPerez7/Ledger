@@ -458,28 +458,32 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     return map;
   }, [transactions, isRealExpense]);
 
-  // "hero" del dashboard: TODO lo gastado con fecha en el mes real (no del
-  // filtro de arriba), sin importar el día — el banco a veces le pone fecha
-  // del lunes siguiente a movimientos del fin de semana, así que un cargo
-  // fechado "mañana" igual cuenta como gasto de este mes.
+  // "hero" del dashboard: TODO lo gastado con fecha en el mes seleccionado
+  // (el del filtro de arriba), sin importar el día — el banco a veces le
+  // pone fecha del lunes siguiente a movimientos del fin de semana, así que
+  // un cargo fechado "mañana" igual cuenta como gasto de ese mes.
   const heroStat = useMemo(() => {
     const now = new Date();
-    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const dayOfMonth = now.getDate();
+    const realThisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const thisMonthKey = currentMonth || realThisMonthKey;
+    const isRealCurrentMonth = thisMonthKey === realThisMonthKey;
+    const [y, m] = thisMonthKey.split("-").map(Number);
+    // mes en curso: "hasta hoy". Mes ya cerrado: el mes completo (últimO día).
+    const dayOfMonth = isRealCurrentMonth ? now.getDate() : new Date(y, m, 0).getDate();
 
     let spentSoFar = 0;
     for (const [date, amt] of Object.entries(dailySpend)) {
       if (date.slice(0, 7) === thisMonthKey) spentSoFar += amt;
     }
 
-    // "ritmo habitual": mismo tramo (día 1 al día actual) pero del mes
-    // calendario inmediatamente anterior — "manzanas con manzanas". La
+    // "ritmo habitual": mismo tramo (día 1 al día X) pero del mes calendario
+    // inmediatamente anterior al seleccionado — "manzanas con manzanas". La
     // versión anterior escalaba el TOTAL del mes por una fracción de días
     // (total * día/díasDelMes), lo que asume gasto parejo día a día y
     // distorsiona el % apenas hay un gasto grande fuera de ese tramo (ej. un
     // pago grande el día 25 "contaba" como si ya hubiera pasado el día 5).
     // Comparar el mismo rango real de fechas evita esa distorsión.
-    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthDate = new Date(y, m - 2, 1);
     const prevMonthKey = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`;
     const hasPrevMonthData = transactions.some((t) => monthKey(t.date) === prevMonthKey);
 
@@ -493,13 +497,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       }
     }
 
-    return { spentSoFar, typicalPace, dayOfMonth, monthKey: thisMonthKey };
-  }, [dailySpend, transactions]);
+    return { spentSoFar, typicalPace, dayOfMonth, monthKey: thisMonthKey, isRealCurrentMonth };
+  }, [dailySpend, transactions, currentMonth]);
 
-  const insights = useMemo(
-    () => computeInsights(transactions, excludedCategoryIds, (id) => getCat(id).label),
-    [transactions, excludedCategoryIds, getCat]
-  );
+  const insights = useMemo(() => {
+    const [y, m] = (currentMonth || `${new Date().getFullYear()}-${new Date().getMonth() + 1}`).split("-").map(Number);
+    return computeInsights(transactions, excludedCategoryIds, (id) => getCat(id).label, new Date(y, m - 1, 1));
+  }, [transactions, excludedCategoryIds, getCat, currentMonth]);
 
   const reconcileStats = useMemo(() => {
     if (!currentMonth) return null;

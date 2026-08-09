@@ -7,7 +7,7 @@ const MONTH_NAMES = [
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
-export function HeroStat({ spentSoFar, typicalPace, dayOfMonth, monthKey }) {
+export function HeroStat({ spentSoFar, typicalPace, dayOfMonth, monthKey, isRealCurrentMonth }) {
   const monthLabel = MONTH_NAMES[Number(monthKey.slice(5, 7)) - 1];
   const hasComparison = typicalPace != null && typicalPace > 0;
   const diffPct = hasComparison ? Math.round(((spentSoFar - typicalPace) / typicalPace) * 100) : null;
@@ -23,7 +23,7 @@ export function HeroStat({ spentSoFar, typicalPace, dayOfMonth, monthKey }) {
       padding: "22px 24px", marginBottom: 20,
     }}>
       <div style={{ fontSize: 12.5, color: TOKENS.textMuted, marginBottom: 6 }}>
-        Llevas gastado en {monthLabel} · día {dayOfMonth}
+        Llevas gastado en {monthLabel}{isRealCurrentMonth ? ` · día ${dayOfMonth}` : ""}
       </div>
       <div className="mono" style={{ fontSize: 34, fontWeight: 700, color: TOKENS.text, letterSpacing: "-0.01em", lineHeight: 1.1 }}>
         {formatCLP(spentSoFar)}
