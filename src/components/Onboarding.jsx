@@ -27,12 +27,14 @@ export function Onboarding({ onDone }) {
 
   return (
     <div
+      onClick={onDone}
       style={{
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
         alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
       }}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16,
           padding: 28, maxWidth: 360, width: "100%", textAlign: "center", position: "relative",
@@ -82,6 +84,10 @@ export function Onboarding({ onDone }) {
           {isLast ? "Empezar" : "Siguiente"}
           {!isLast && <ChevronRight size={14} />}
         </button>
+
+        <div style={{ fontSize: 11, color: TOKENS.textFaint, marginTop: 14 }}>
+          ¿Necesitas verlo de nuevo? Búscalo en el botón <strong>?</strong> de arriba.
+        </div>
       </div>
     </div>
   );
