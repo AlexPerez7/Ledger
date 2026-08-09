@@ -10,7 +10,7 @@ import {
   makeKey, monthKey, uid, computeInsights, formatCLP,
 } from "./lib/utils.js";
 
-import { Header, MonthBar } from "./components/Header.jsx";
+import { Header, MonthBar, BottomNav } from "./components/Header.jsx";
 import { CategoryManager } from "./components/CategoryManager.jsx";
 import { Conciliacion } from "./components/Conciliacion.jsx";
 import { ToastStack } from "./components/Toast.jsx";
@@ -580,6 +580,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         )}
       </main>
 
+      <BottomNav tab={tab} setTab={setTab} />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
     </div>

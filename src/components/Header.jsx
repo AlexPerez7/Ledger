@@ -3,12 +3,13 @@ import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon } from
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
 
+const TAB_ITEMS = [
+  { id: "resumen", label: "Resumen", icon: LayoutGrid },
+  { id: "movimientos", label: "Movimientos", icon: ListChecks },
+  { id: "conciliacion", label: "Conciliación", icon: ScanLine },
+];
+
 export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTheme }) {
-  const items = [
-    { id: "resumen", label: "Resumen", icon: LayoutGrid },
-    { id: "movimientos", label: "Movimientos", icon: ListChecks },
-    { id: "conciliacion", label: "Conciliación", icon: ScanLine },
-  ];
   return (
     <div style={{ borderBottom: `1px solid ${TOKENS.border}`, background: TOKENS.surface, position: "sticky", top: 0, zIndex: 10 }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
@@ -26,8 +27,8 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
           }}>
             <Tag size={13} /> Categorías
           </button>
-          <nav style={{ display: "flex", gap: 4, background: TOKENS.surfaceAlt, padding: 4, borderRadius: 10, border: `1px solid ${TOKENS.border}` }}>
-            {items.map((it) => {
+          <nav className="top-tab-nav" style={{ display: "flex", gap: 4, background: TOKENS.surfaceAlt, padding: 4, borderRadius: 10, border: `1px solid ${TOKENS.border}` }}>
+            {TAB_ITEMS.map((it) => {
               const Icon = it.icon;
               const active = tab === it.id;
               return (
@@ -36,7 +37,7 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
                   border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
                   background: active ? TOKENS.bg : "transparent", color: active ? TOKENS.text : TOKENS.textMuted,
                 }}>
-                  <Icon size={14} /> <span className="nav-label">{it.label}</span>
+                  <Icon size={14} /> <span>{it.label}</span>
                 </button>
               );
             })}
@@ -64,6 +65,30 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
         </div>
       </div>
     </div>
+  );
+}
+
+export function BottomNav({ tab, setTab }) {
+  return (
+    <nav className="bottom-tab-nav" aria-label="Navegación principal">
+      {TAB_ITEMS.map((it) => {
+        const Icon = it.icon;
+        const active = tab === it.id;
+        return (
+          <button
+            key={it.id}
+            onClick={() => setTab(it.id)}
+            aria-label={it.label}
+            aria-current={active ? "page" : undefined}
+            className="bottom-tab-btn"
+            style={{ color: active ? TOKENS.text : TOKENS.textFaint }}
+          >
+            <Icon size={20} strokeWidth={active ? 2.3 : 1.8} />
+            <span>{it.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 

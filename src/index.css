@@ -93,9 +93,13 @@ select:focus-visible {
 
 /* ---- responsive layout — breakpoint at 640px ---------------------------- */
 
+.bottom-tab-nav {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .app-main {
-    padding: 20px 14px 60px !important;
+    padding: 20px 14px calc(72px + env(safe-area-inset-bottom)) !important;
   }
 
   .header-subtitle {
@@ -106,8 +110,8 @@ select:focus-visible {
     flex-wrap: wrap;
   }
 
-  .nav-label {
-    display: none;
+  .top-tab-nav {
+    display: none !important;
   }
 
   .resumen-charts-grid {
@@ -158,11 +162,42 @@ select:focus-visible {
   }
 
   .toast-stack {
-    left: 14px;
-    right: 14px;
-    bottom: 14px;
-    width: auto;
+    left: 14px !important;
+    right: 14px !important;
+    bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
   }
+
+  .bulk-action-bar {
+    bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .bottom-tab-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    justify-content: space-around;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+}
+
+.bottom-tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 /* ---- toasts --------------------------------------------------------------- */

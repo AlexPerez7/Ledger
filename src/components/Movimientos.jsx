@@ -286,6 +286,7 @@ function BulkActionsBar({ count, categories, onDelete, onChangeCategory, onClose
 
   return (
     <div
+      className="bulk-action-bar"
       style={{
         position: "fixed", left: "50%", bottom: 20, transform: "translateX(-50%)", zIndex: 1500,
         display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12,
