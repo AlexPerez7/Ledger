@@ -142,15 +142,6 @@ select:focus-visible {
     grid-template-columns: 1fr !important;
   }
 
-  .category-chart-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .category-chart-pie {
-    width: 100% !important;
-  }
-
   .form-grid-2 {
     grid-template-columns: 1fr !important;
   }

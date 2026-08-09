@@ -224,16 +224,17 @@ export function Resumen({
 
 // donut + leyenda clickeable — se usa tanto para "Gasto por categoría" como
 // "Ingresos por categoría", mismo look para que se puedan comparar a simple
-// vista. En mobile, index.css apila el donut arriba de la leyenda (ver
-// .category-chart-row / .category-chart-pie).
+// vista. Siempre en columna (donut arriba, leyenda abajo a todo el ancho):
+// con 3 tarjetas por fila en desktop, ponerlas lado a lado dejaba muy poco
+// espacio para el nombre de la categoría y el monto se salía del recuadro.
 function CategoryDonut({ data, onCategoryClick, emptyIcon, emptyTitle, emptyText }) {
   if (data.length === 0) {
     return <EmptyState icon={emptyIcon} title={emptyTitle} text={emptyText} />;
   }
   return (
-    <div className="category-chart-row" style={{ display: "flex", alignItems: "center", gap: 16 }}>
-      <div className="category-chart-pie" style={{ width: "55%", flexShrink: 0 }}>
-        <ResponsiveContainer width="100%" height={220}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ width: "100%", maxWidth: 220, margin: "0 auto" }}>
+        <ResponsiveContainer width="100%" height={190}>
           <PieChart>
             <Pie
               data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}
@@ -251,7 +252,7 @@ function CategoryDonut({ data, onCategoryClick, emptyIcon, emptyTitle, emptyText
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {data.slice(0, 6).map((c) => {
           const CatIcon = c.icon;
           return (
