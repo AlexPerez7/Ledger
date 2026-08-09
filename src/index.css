@@ -210,6 +210,24 @@ select:focus-visible {
     z-index: 25;
     cursor: pointer;
   }
+
+  .chip-scroll-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    max-width: 100% !important;
+  }
+
+  .chip-scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chip-scroll-row > button {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
 }
 
 .bottom-tab-btn {

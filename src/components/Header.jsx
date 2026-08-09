@@ -107,13 +107,13 @@ export function MonthBar({ months, monthFilter, setMonthFilter }) {
   return (
     <div style={{ marginBottom: 22 }}>
       {years.length > 1 && (
-        <div style={{ display: "flex", gap: 4, background: TOKENS.surfaceAlt, padding: 4, borderRadius: 10, border: `1px solid ${TOKENS.border}`, width: "fit-content", marginBottom: 10 }}>
+        <div className="chip-scroll-row" style={{ display: "flex", gap: 4, background: TOKENS.surfaceAlt, padding: 4, borderRadius: 10, border: `1px solid ${TOKENS.border}`, width: "fit-content", maxWidth: "100%", marginBottom: 10 }}>
           {years.map((y) => {
             const active = y === selectedYear;
             return (
               <button key={y} onClick={() => setYearOverride(y)} style={{
                 padding: "5px 12px", borderRadius: 7, border: "none", cursor: "pointer",
-                fontSize: 12.5, fontWeight: 500,
+                fontSize: 12.5, fontWeight: 500, flexShrink: 0,
                 background: active ? TOKENS.bg : "transparent", color: active ? TOKENS.text : TOKENS.textMuted,
               }}>
                 {y}
@@ -122,7 +122,7 @@ export function MonthBar({ months, monthFilter, setMonthFilter }) {
           })}
         </div>
       )}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div className="chip-scroll-row" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button onClick={() => setMonthFilter("all")} style={pillStyle(monthFilter === "all")}>Todo</button>
         {monthsInYear.map((m) => (
           <button key={m} onClick={() => setMonthFilter(m)} style={pillStyle(monthFilter === m)}>{label(m)}</button>
