@@ -33,6 +33,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const [loaded, setLoaded] = useState(false);
   const [syncError, setSyncError] = useState(null);
   const [tab, setTab] = useState("resumen");
+  // ids de los movimientos agregados por la ÚLTIMA importación de banco —
+  // para que el usuario pueda revisarlos sin tener que buscarlos a mano en
+  // la lista completa (ver banner + filtro "Ver solo estos" en Movimientos).
+  const [recentImportIds, setRecentImportIds] = useState([]);
   const [monthFilter, setMonthFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -225,6 +229,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           updateToast(toastId, "error", "No se pudieron guardar los movimientos importados. Intenta de nuevo.");
           return;
         }
+        // se reemplaza (no se acumula) con lo de esta importación puntual:
+        // si esta pasada no trajo nada nuevo, el aviso de la pasada anterior
+        // también debe desaparecer.
+        setRecentImportIds(imported.map((t) => t.id));
 
         // candado cronológico: el Saldo del banco solo se aplica si el
         // archivo es igual o más reciente que la última conciliación
@@ -618,6 +626,8 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 pushToast={pushToast}
                 onBulkDelete={bulkDeleteTransactions}
                 onBulkChangeCategory={bulkChangeCategory}
+                recentImportIds={recentImportIds}
+                onClearRecentImports={() => setRecentImportIds([])}
               />
             </Suspense>
           </ErrorBoundary>

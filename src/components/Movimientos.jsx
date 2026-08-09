@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2, Trash2 } from "lucide-react";
+import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2, Trash2, Sparkles } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
@@ -20,8 +20,20 @@ export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, showImportModal, setShowImportModal,
   addManual, handleFile, pushToast, onBulkDelete, onBulkChangeCategory,
+  recentImportIds = [], onClearRecentImports,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
+  // filtro opcional para revisar SOLO lo que trajo la última importación,
+  // sin tener que buscarlo a mano en la lista completa.
+  const [onlyRecent, setOnlyRecent] = useState(false);
+  const recentSet = useMemo(() => new Set(recentImportIds), [recentImportIds]);
+  const visibleTx = onlyRecent ? filteredTx.filter((t) => recentSet.has(t.id)) : filteredTx;
+
+  // si el usuario borra o el filtro deja de tener sentido (nada seleccionable
+  // porque ya no queda ningún movimiento reciente a la vista), se apaga solo.
+  useEffect(() => {
+    if (onlyRecent && recentImportIds.length === 0) setOnlyRecent(false);
+  }, [onlyRecent, recentImportIds.length]);
 
   // Selección múltiple: por ahora solo rastrea IDs elegidos (base para
   // futuras acciones masivas — categorizar/borrar en lote, etc.), sin
@@ -33,7 +45,7 @@ export function Movimientos({
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const visibleIds = filteredTx.map((t) => t.id);
+  const visibleIds = visibleTx.map((t) => t.id);
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const someVisibleSelected = visibleIds.some((id) => selectedIds.includes(id));
 
@@ -139,7 +151,7 @@ export function Movimientos({
               type="checkbox"
               checked={allVisibleSelected}
               onChange={toggleSelectAll}
-              disabled={filteredTx.length === 0}
+              disabled={visibleTx.length === 0}
               aria-label={allVisibleSelected ? "Deseleccionar todo" : "Seleccionar todo"}
               title={allVisibleSelected ? "Deseleccionar todo" : "Seleccionar todo"}
               style={{ accentColor: TOKENS.accent, cursor: filteredTx.length === 0 ? "default" : "pointer", width: 18, height: 18 }}
@@ -175,6 +187,35 @@ export function Movimientos({
         )}
       </div>
 
+      {recentImportIds.length > 0 && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10,
+          background: "var(--tint-accent-soft)", border: `1px solid ${TOKENS.accent}`, marginBottom: 14, flexWrap: "wrap",
+        }}>
+          <Sparkles size={14} color={TOKENS.accent} style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12.5, color: TOKENS.text, flex: "1 1 160px" }}>
+            {recentImportIds.length} movimiento{recentImportIds.length === 1 ? "" : "s"} importado{recentImportIds.length === 1 ? "" : "s"} recién — marcado{recentImportIds.length === 1 ? "" : "s"} como "nuevo" abajo
+          </span>
+          <button
+            onClick={() => setOnlyRecent((v) => !v)}
+            style={{
+              padding: "6px 10px", borderRadius: 7, border: `1px solid ${TOKENS.accent}`, fontSize: 12, cursor: "pointer",
+              background: onlyRecent ? TOKENS.accent : "transparent", color: onlyRecent ? TOKENS.bg : TOKENS.accent, fontWeight: 600,
+            }}
+          >
+            {onlyRecent ? "Ver todos" : "Ver solo estos"}
+          </button>
+          <button
+            onClick={onClearRecentImports}
+            aria-label="Descartar aviso de importación reciente"
+            title="Descartar"
+            style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer", padding: 4 }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {showManualForm && <ManualForm categories={categories} onClose={() => setShowManualForm(false)} onSubmit={addManual} />}
 
       {showImportModal && (
@@ -182,12 +223,26 @@ export function Movimientos({
       )}
 
       <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, overflow: "hidden" }}>
-        {filteredTx.length === 0 ? (
+        {visibleTx.length === 0 ? (
           !hasTransactions ? (
             <EmptyState
               icon={Inbox}
               title="Todavía no hay movimientos"
               text="Sube el .xls o la cartola .pdf de tu banco, o agrega un gasto o ingreso manual (arriba), para empezar a ver tus finanzas aquí."
+            />
+          ) : onlyRecent ? (
+            <EmptyState
+              icon={SearchX}
+              title="Sin resultados"
+              text="Ninguno de los movimientos recién importados coincide con tu búsqueda o filtro de categoría."
+              action={
+                <button onClick={() => { setSearch(""); setCatFilter("all"); }} style={{
+                  padding: "7px 14px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: "transparent",
+                  color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
+                }}>
+                  Limpiar filtros
+                </button>
+              }
             />
           ) : search || catFilter !== "all" ? (
             <EmptyState
@@ -211,7 +266,7 @@ export function Movimientos({
             />
           )
         ) : (
-          groupByDate(filteredTx).map((group) => (
+          groupByDate(visibleTx).map((group) => (
             <div key={group.date}>
               <div
                 style={{
@@ -233,6 +288,7 @@ export function Movimientos({
                   onDelete={deleteTransaction}
                   selected={selectedIds.includes(t.id)}
                   onToggleSelect={toggleSelectOne}
+                  isRecent={recentSet.has(t.id)}
                 />
               ))}
             </div>
@@ -405,7 +461,7 @@ function ImportModal({ onClose, onFile }) {
   );
 }
 
-function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect }) {
+function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect, isRecent }) {
   const [editing, setEditing] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const cat = getCat(t.category);
@@ -452,6 +508,7 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
           style={{
             display: "grid", gridTemplateColumns: "20px 1fr 170px 130px auto", alignItems: "center", gap: 10,
             padding: "11px 16px", background: TOKENS.surface, touchAction: "pan-y", position: "relative",
+            boxShadow: isRecent ? `inset 3px 0 0 ${TOKENS.accent}` : "none",
           }}
           drag={isMobile ? "x" : false}
           dragConstraints={{ left: -SWIPE_ACTION_WIDTH, right: 0 }}
@@ -478,6 +535,11 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
           <span style={{ marginLeft: 8, fontSize: 10, color: TOKENS.textFaint, border: `1px solid ${TOKENS.border}`, borderRadius: 4, padding: "1px 5px" }}>
             {t.source === "bank" ? "banco" : "manual"}
           </span>
+          {isRecent && (
+            <span style={{ marginLeft: 5, fontSize: 10, color: TOKENS.accent, border: `1px solid ${TOKENS.accent}`, borderRadius: 4, padding: "1px 5px", fontWeight: 600 }}>
+              nuevo
+            </span>
+          )}
           {t.source === "manual" && t.reconciled && <Check size={11} color={TOKENS.income} style={{ marginLeft: 5, verticalAlign: "-1px" }} />}
         </div>
         <div className="tx-cat" style={{ fontSize: 11.5, color: cat.color, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
