@@ -50,6 +50,9 @@ export async function saveAccountSettings(baseBalance, lastSyncDate = new Date()
     return { baseBalance, lastSyncDate };
   } catch (e) {
     console.error("No se pudo guardar account_settings en Supabase", e);
-    return null;
+    // se devuelve el mensaje real (no null) para poder mostrárselo al
+    // usuario — sin esto, un fallo de Supabase (ej. RLS) queda invisible y
+    // solo se ve en la consola del navegador, imposible de revisar en mobile.
+    return { error: e.message || String(e) };
   }
 }

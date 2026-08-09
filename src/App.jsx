@@ -219,7 +219,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           updateToast(toastId, "warn", "Movimientos procesados. Saldo sin cambios (archivo antiguo).");
         } else {
           const settings = await saveAccountSettings(latestRow.saldo, fileLastSyncDate);
-          if (settings) {
+          if (settings && !settings.error) {
             setAccountSettings(settings);
             updateToast(
               toastId,
@@ -232,7 +232,8 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             const importedMsg = imported.length > 0
               ? `${imported.length} movimiento${imported.length === 1 ? "" : "s"} nuevo${imported.length === 1 ? "" : "s"} importado${imported.length === 1 ? "" : "s"}.`
               : "Archivo procesado, sin movimientos nuevos.";
-            updateToast(toastId, "warn", `${importedMsg} No se pudo conciliar el saldo automáticamente.`);
+            const detail = settings?.error ? ` (${settings.error})` : "";
+            updateToast(toastId, "warn", `${importedMsg} No se pudo conciliar el saldo automáticamente.${detail}`);
           }
         }
       } catch (e) {
@@ -428,7 +429,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
   const adjustBaseBalance = useCallback(async (newBalance) => {
     const result = await saveAccountSettings(newBalance);
-    if (result) {
+    if (result && !result.error) {
       setAccountSettings(result);
       return true;
     }
