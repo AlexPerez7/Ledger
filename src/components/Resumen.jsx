@@ -3,7 +3,7 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Legend,
 } from "recharts";
-import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3, ImageDown, Loader2, Pencil, X } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, BarChart3, ImageDown, Loader2, Pencil, X, PiggyBank } from "lucide-react";
 import { TOKENS, resolveCategoryIcon } from "../lib/constants.js";
 import { formatCLP } from "../lib/utils.js";
 import { Panel, EmptyState, StatCard, FieldInput } from "./Shared.jsx";
@@ -27,7 +27,7 @@ function formatSyncDate(iso) {
 
 export function Resumen({
   stats, byCategory, byIncomeCategory, categories, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
-  dynamicBalance, lastSyncDate, onAdjustBalance, onCategoryClick,
+  dynamicBalance, lastSyncDate, onAdjustBalance, onCategoryClick, totalSavings,
 }) {
   const captureRef = useRef(null);
   const [exporting, setExporting] = useState(false);
@@ -115,6 +115,9 @@ export function Resumen({
         <StatCard label="Ingresos" value={formatCLP(stats.income)} icon={ArrowUpRight} accent={TOKENS.income} />
         <StatCard label="Gastos" value={formatCLP(stats.expense)} icon={ArrowDownRight} accent={TOKENS.expense} />
         <StatCard label="Balance del período" value={formatCLP(stats.balance)} accent={stats.balance >= 0 ? TOKENS.income : TOKENS.expense} />
+        {totalSavings != null && (
+          <StatCard label="Total ahorrado" value={formatCLP(totalSavings)} icon={PiggyBank} accent={TOKENS.income} sub="histórico" />
+        )}
       </div>
 
       <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginBottom: 16 }}>

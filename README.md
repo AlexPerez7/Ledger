@@ -36,6 +36,10 @@ cualquier dispositivo.
   categorías propias de ingreso (Sueldo, Reembolsos, etc.) además de la
   categoría "Ingresos" genérica — los selectores de categoría solo sugieren
   las del tipo que corresponde según el monto del movimiento.
+- Una categoría se puede marcar para que sus movimientos se acumulen en un
+  "Total ahorrado" aparte en Resumen (ej. traspasos a tu cuenta de ahorro):
+  no es una cuenta con saldo propio, es solo la suma histórica de esos
+  movimientos, sin contar como gasto.
 
 **Resumen**
 - Hero con lo gastado en lo que va del mes y comparación contra el mismo
@@ -127,6 +131,7 @@ create table categories (
   exclude_from_expense boolean not null default false,
   budget numeric, -- presupuesto mensual opcional; null = sin límite definido
   type text, -- "income" | "expense" | "both"; null = se infiere ("ingreso" -> income, el resto -> expense)
+  is_savings boolean not null default false, -- sus movimientos se acumulan en "Total ahorrado" (Resumen), no cuentan como gasto
   user_id uuid not null default auth.uid() references auth.users (id),
   primary key (id, user_id)
 );

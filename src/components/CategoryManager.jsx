@@ -4,7 +4,7 @@ import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCateg
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { ToggleSwitch, FieldInput } from "./Shared.jsx";
 
-export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange, onTypeChange }) {
+export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange, onTypeChange, onSavingsToggle }) {
   const [newLabel, setNewLabel] = useState("");
   const [newIcon, setNewIcon] = useState("Shapes");
   const [newColor, setNewColor] = useState(PALETTE[0]);
@@ -83,10 +83,12 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   icon={c.icon || "Shapes"}
                   budget={c.budget}
                   type={categoryType(c)}
+                  isSavings={c.isSavings}
                   onColorChange={(color) => onColorChange(c.id, color)}
                   onIconChange={(icon) => onIconChange(c.id, icon)}
                   onBudgetChange={(budget) => onBudgetChange(c.id, budget)}
                   onTypeChange={(type) => onTypeChange(c.id, type)}
+                  onSavingsToggle={() => onSavingsToggle(c.id)}
                   onClose={() => setPickerFor(null)}
                 />
               )}
@@ -143,7 +145,7 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
 // selector combinado de color + ícono — se usa tanto para editar una
 // categoría existente como para la que se está creando, así ambos flujos
 // tienen la misma experiencia.
-function AppearancePicker({ color, icon, budget, type, onColorChange, onIconChange, onBudgetChange, onTypeChange, onClose }) {
+function AppearancePicker({ color, icon, budget, type, isSavings, onColorChange, onIconChange, onBudgetChange, onTypeChange, onSavingsToggle, onClose }) {
   const [budgetInput, setBudgetInput] = useState(budget != null ? String(budget) : "");
   return (
     <div style={{
@@ -235,6 +237,21 @@ function AppearancePicker({ color, icon, budget, type, onColorChange, onIconChan
             onBlur={() => onBudgetChange(budgetInput === "" ? null : parseFloat(budgetInput))}
             placeholder="Sin límite"
           />
+        </>
+      )}
+
+      {onSavingsToggle && (
+        <>
+          <div style={{ width: "100%", height: 1, background: TOKENS.border, margin: "12px 0" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 12, color: TOKENS.text }}>Suma al "Total ahorrado"</div>
+              <div style={{ fontSize: 10.5, color: TOKENS.textFaint, marginTop: 2, lineHeight: 1.4 }}>
+                Sus movimientos se acumulan en una tarjeta aparte en Resumen, sin contar como gasto.
+              </div>
+            </div>
+            <ToggleSwitch checked={!!isSavings} onChange={onSavingsToggle} ariaLabel='Sumar esta categoría al "Total ahorrado"' />
+          </div>
         </>
       )}
     </div>

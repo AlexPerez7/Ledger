@@ -40,12 +40,14 @@ const TABLES = {
       exclude_from_expense: !!c.excludeFromExpense,
       budget: c.budget != null ? c.budget : null,
       type: c.type || null,
+      is_savings: !!c.isSavings,
     }),
     fromRow: (r) => ({
       id: r.id, label: r.label, color: r.color, icon: r.icon,
       excludeFromExpense: !!r.exclude_from_expense,
       budget: r.budget != null ? Number(r.budget) : null,
       type: r.type || null,
+      isSavings: !!r.is_savings,
     }),
   },
   merchantRules: {

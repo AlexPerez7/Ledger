@@ -398,6 +398,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     (id) => { persistCats(categories.map((c) => (c.id === id ? { ...c, excludeFromExpense: !c.excludeFromExpense } : c))); },
     [categories, persistCats]
   );
+  const toggleCategorySavings = useCallback(
+    (id) => { persistCats(categories.map((c) => (c.id === id ? { ...c, isSavings: !c.isSavings } : c))); },
+    [categories, persistCats]
+  );
   const deleteCategory = useCallback(
     (id) => {
       persistCats(categories.filter((c) => c.id !== id));
@@ -523,6 +527,21 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     [categories]
   );
   const isRealExpense = useCallback((t) => t.amount < 0 && !excludedCategoryIds.has(t.category), [excludedCategoryIds]);
+
+  // Total ahorrado = histórico completo (no solo el mes elegido) de las
+  // categorías marcadas como "ahorro": la plata que sale de la cuenta hacia
+  // esas categorías se acumula (monto negativo), y si alguna vez vuelve a la
+  // cuenta corriente (monto positivo con esa misma categoría) se resta —
+  // sigue siendo tuya, solo cambia de lugar. null si el usuario no marcó
+  // ninguna categoría todavía, para que el dashboard no muestre $0 confuso.
+  const savingsCategoryIds = useMemo(
+    () => new Set(categories.filter((c) => c.isSavings).map((c) => c.id)),
+    [categories]
+  );
+  const totalSavings = useMemo(() => {
+    if (savingsCategoryIds.size === 0) return null;
+    return transactions.filter((t) => savingsCategoryIds.has(t.category)).reduce((sum, t) => sum - t.amount, 0);
+  }, [transactions, savingsCategoryIds]);
 
   const stats = useMemo(() => {
     const income = monthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
@@ -705,7 +724,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           <CategoryManager
             categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory}
             onIconChange={changeCategoryIcon} onColorChange={changeCategoryColor} onToggleExpense={toggleCategoryExpense}
-            onBudgetChange={changeCategoryBudget} onTypeChange={changeCategoryType}
+            onBudgetChange={changeCategoryBudget} onTypeChange={changeCategoryType} onSavingsToggle={toggleCategorySavings}
           />
         )}
 
@@ -719,6 +738,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 dynamicBalance={dynamicBalance} lastSyncDate={accountSettings?.lastSyncDate}
                 onAdjustBalance={adjustBaseBalance}
                 onCategoryClick={goToCategoryMovements}
+                totalSavings={totalSavings}
               />
             </Suspense>
           </ErrorBoundary>

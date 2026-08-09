@@ -35,16 +35,16 @@ export const TOKENS = {
 // los dos sentidos (ej. Transferencias: puede que te transfieran a ti o que
 // tú transfieras) — esas se sugieren siempre, sin importar el signo.
 export const DEFAULT_CATEGORIES = [
-  { id: "ingreso", label: "Ingresos", color: "#3FBF8F", icon: "TrendingUp", type: "income", excludeFromExpense: false },
-  { id: "comida", label: "Comida y delivery", color: "#E8654F", icon: "Utensils", type: "expense", excludeFromExpense: false },
-  { id: "transporte", label: "Transporte", color: "#F0B94A", icon: "Car", type: "expense", excludeFromExpense: false },
-  { id: "suscripciones", label: "Suscripciones y juegos", color: "#9B87C4", icon: "Gamepad2", type: "expense", excludeFromExpense: false },
-  { id: "compras", label: "Compras", color: "#5B9BD5", icon: "ShoppingBag", type: "expense", excludeFromExpense: false },
-  { id: "servicios", label: "Servicios y cuentas", color: "#D98E52", icon: "Receipt", type: "expense", excludeFromExpense: false },
-  { id: "salud", label: "Salud y cuidado personal", color: "#6FCF97", icon: "HeartPulse", type: "expense", excludeFromExpense: false },
-  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight", type: "both", excludeFromExpense: true },
-  { id: "efectivo", label: "Retiro de efectivo", color: "#A0A8B4", icon: "Banknote", type: "expense", excludeFromExpense: false },
-  { id: "otros", label: "Otros", color: "#57646F", icon: "Shapes", type: "expense", excludeFromExpense: false },
+  { id: "ingreso", label: "Ingresos", color: "#3FBF8F", icon: "TrendingUp", type: "income", excludeFromExpense: false, isSavings: false },
+  { id: "comida", label: "Comida y delivery", color: "#E8654F", icon: "Utensils", type: "expense", excludeFromExpense: false, isSavings: false },
+  { id: "transporte", label: "Transporte", color: "#F0B94A", icon: "Car", type: "expense", excludeFromExpense: false, isSavings: false },
+  { id: "suscripciones", label: "Suscripciones y juegos", color: "#9B87C4", icon: "Gamepad2", type: "expense", excludeFromExpense: false, isSavings: false },
+  { id: "compras", label: "Compras", color: "#5B9BD5", icon: "ShoppingBag", type: "expense", excludeFromExpense: false, isSavings: false },
+  { id: "servicios", label: "Servicios y cuentas", color: "#D98E52", icon: "Receipt", type: "expense", excludeFromExpense: false, isSavings: false },
+  { id: "salud", label: "Salud y cuidado personal", color: "#6FCF97", icon: "HeartPulse", type: "expense", excludeFromExpense: false, isSavings: false },
+  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight", type: "both", excludeFromExpense: true, isSavings: false },
+  { id: "efectivo", label: "Retiro de efectivo", color: "#A0A8B4", icon: "Banknote", type: "expense", excludeFromExpense: false, isSavings: false },
+  { id: "otros", label: "Otros", color: "#57646F", icon: "Shapes", type: "expense", excludeFromExpense: false, isSavings: false },
 ];
 
 // categorías creadas antes de que existiera este campo (o leídas desde una
