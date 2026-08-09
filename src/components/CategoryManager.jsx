@@ -26,7 +26,7 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
           const pickerOpen = pickerFor === c.id;
           const isIncome = c.id === INCOME_CATEGORY_ID;
           return (
-            <div key={c.id}>
+            <div key={c.id} style={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 10, padding: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
                   onClick={() => setPickerFor(pickerOpen ? null : c.id)}
@@ -44,7 +44,7 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                 <input
                   defaultValue={c.label}
                   onBlur={(e) => { if (e.target.value.trim() && e.target.value !== c.label) onRename(c.id, e.target.value.trim()); }}
-                  style={{ flex: 1, padding: "6px 9px", borderRadius: 6, border: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, color: TOKENS.text, fontSize: 12.5 }}
+                  style={{ flex: 1, minWidth: 0, padding: "6px 9px", borderRadius: 6, border: "none", background: "transparent", color: TOKENS.text, fontSize: 12.5 }}
                 />
                 <ToggleSwitch
                   checked={!c.excludeFromExpense}
@@ -53,6 +53,7 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   ariaLabel={`${c.label} cuenta como gasto`}
                   title={isIncome ? "Los ingresos nunca cuentan como gasto" : "Cuenta como gasto en resúmenes y gráficos"}
                 />
+                <div style={{ width: 1, height: 20, background: TOKENS.border, flexShrink: 0 }} />
                 <ConfirmDeleteButton
                   onConfirm={() => onDelete(c.id)}
                   text={`Los movimientos en "${c.label}" van a pasar a Otros. ¿Eliminar la categoría?`}
@@ -63,7 +64,7 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
               {pickerOpen && (
                 <div style={{
                   display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, padding: 10,
-                  background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8,
+                  background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8,
                 }}>
                   {ICON_NAMES.map((name) => {
                     const OptionIcon = ICONS[name];
