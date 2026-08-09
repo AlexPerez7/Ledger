@@ -119,15 +119,26 @@ create table merchant_rules (
   user_id uuid not null default auth.uid() references auth.users (id)
 );
 
+-- una sola fila por usuario: guarda el ajuste manual de saldo y la
+-- conciliación automática que hace la app al importar el .xls del banco
+create table account_settings (
+  user_id uuid primary key default auth.uid() references auth.users (id),
+  base_balance numeric not null,
+  last_sync_date timestamptz not null default now()
+);
+
 alter table transactions enable row level security;
 alter table categories enable row level security;
 alter table merchant_rules enable row level security;
+alter table account_settings enable row level security;
 
 create policy "usuarios ven y editan solo lo suyo" on transactions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "usuarios ven y editan solo lo suyo" on categories
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "usuarios ven y editan solo lo suyo" on merchant_rules
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "usuarios ven y editan solo lo suyo" on account_settings
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 ```
 
