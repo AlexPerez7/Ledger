@@ -85,7 +85,19 @@ function BottomTabButton({ it, tab, setTab }) {
   );
 }
 
-export function BottomNav({ tab, setTab, onManual, onImport }) {
+// no es una pestaña (no cambia `tab`, no queda "activo") — abre el mismo
+// overlay de Categorías que el botón del header, solo que accesible sin
+// tener que scrollear hasta arriba.
+function BottomActionButton({ icon: Icon, label, onClick }) {
+  return (
+    <button onClick={onClick} aria-label={label} className="bottom-tab-btn" style={{ color: TOKENS.textFaint }}>
+      <Icon size={20} strokeWidth={1.8} />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+export function BottomNav({ tab, setTab, onManual, onImport, onManageCats }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef(null);
   const sheetRef = useRef(null);
@@ -133,6 +145,7 @@ export function BottomNav({ tab, setTab, onManual, onImport }) {
         )}
       </div>
       <BottomTabButton it={TAB_ITEMS[2]} tab={tab} setTab={setTab} />
+      <BottomActionButton icon={Tag} label="Categorías" onClick={onManageCats} />
     </nav>
   );
 }

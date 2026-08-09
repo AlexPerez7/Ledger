@@ -612,7 +612,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         )}
       </main>
 
-      <BottomNav tab={tab} setTab={setTab} onManual={openManualEntry} onImport={openImportFlow} />
+      <BottomNav tab={tab} setTab={setTab} onManual={openManualEntry} onImport={openImportFlow} onManageCats={() => setShowCatManager(true)} />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
     </div>
