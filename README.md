@@ -92,6 +92,12 @@ leerla o modificarla):
 -- categorías por defecto usan el mismo id fijo ("comida", "transporte", …)
 -- para todos los usuarios, así que con id solo como primary key la segunda
 -- cuenta que se registra choca con las filas que ya sembró la primera.
+-- unique(user_id, key): key es el identificador determinístico del
+-- movimiento (fecha+saldo+cargo+abono, ver src/lib/utils.js), no un id al
+-- azar — esta restricción es la red de seguridad a nivel de base de datos
+-- contra reimportar el mismo movimiento dos veces (ej. si el usuario suelta
+-- el mismo archivo dos veces seguidas): si la app llega a fallar en
+-- detectarlo, Postgres rechaza el insert en vez de guardar el duplicado.
 create table transactions (
   id text not null,
   key text not null,
@@ -104,7 +110,8 @@ create table transactions (
   reconciled boolean not null default false,
   matched_id text,
   user_id uuid not null default auth.uid() references auth.users (id),
-  primary key (id, user_id)
+  primary key (id, user_id),
+  unique (user_id, key)
 );
 
 create table categories (
