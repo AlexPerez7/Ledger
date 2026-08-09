@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2, Trash2, Sparkles } from "lucide-react";
-import { TOKENS } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
@@ -630,37 +630,82 @@ function ManualForm({ categories, onClose, onSubmit }) {
   };
 
   return (
-    <div style={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 18 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-        <div className="display" style={{ fontSize: 13.5, fontWeight: 600 }}>Nuevo movimiento manual</div>
-        <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        {["expense", "income"].map((v) => (
-          <button key={v} onClick={() => setType(v)} style={{
-            flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 12.5, cursor: "pointer",
-            border: `1px solid ${type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.border}`,
-            background: type === v ? (v === "expense" ? "var(--tint-expense)" : "var(--tint-income)") : "transparent",
-            color: type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.textMuted,
-          }}>
-            {v === "expense" ? "Gasto" : "Ingreso"}
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
+        alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16,
+          maxWidth: 440, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px 0", flexShrink: 0 }}>
+          <div className="display" style={{ fontSize: 14.5, fontWeight: 600 }}>Nuevo movimiento</div>
+          <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, padding: "14px 20px 0", flexShrink: 0 }}>
+          {["expense", "income"].map((v) => (
+            <button key={v} onClick={() => setType(v)} style={{
+              flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              border: `1px solid ${type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.border}`,
+              background: type === v ? (v === "expense" ? "var(--tint-expense)" : "var(--tint-income)") : "transparent",
+              color: type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.textMuted,
+            }}>
+              {v === "expense" ? "Gasto" : "Ingreso"}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1 }}>
+          <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 10 }}>Categoría</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+            {categories.map((c) => {
+              const CatIcon = resolveCategoryIcon(c);
+              const selected = category === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setCategory(c.id)}
+                  aria-pressed={selected}
+                  title={c.label}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 2 }}
+                >
+                  <div style={{
+                    width: 46, height: 46, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                    background: selected ? c.color : `${c.color}22`,
+                    boxShadow: selected ? `0 0 0 2px ${c.color}` : "none",
+                  }}>
+                    <CatIcon size={19} color={selected ? TOKENS.bg : c.color} />
+                  </div>
+                  <div style={{
+                    fontSize: 10.5, color: selected ? TOKENS.text : TOKENS.textMuted, textAlign: "center", lineHeight: 1.2,
+                    overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  }}>
+                    {c.label}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ padding: "14px 20px", borderTop: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, flexShrink: 0 }}>
+          <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+            <FieldInput label="Fecha" type="date" value={date} onChange={setDate} />
+            <FieldInput label="Monto (CLP)" type="number" value={amount} onChange={setAmount} placeholder="0" />
+          </div>
+          <FieldInput label="Descripción" value={description} onChange={setDescription} placeholder="Ej: Almuerzo con Facu" style={{ marginBottom: 12 }} />
+          <button onClick={submit} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "none", cursor: "pointer", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 13.5 }}>
+            Guardar movimiento
           </button>
-        ))}
+        </div>
       </div>
-      <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-        <FieldInput label="Fecha" type="date" value={date} onChange={setDate} />
-        <FieldInput label="Monto (CLP)" type="number" value={amount} onChange={setAmount} placeholder="0" />
-      </div>
-      <FieldInput label="Descripción" value={description} onChange={setDescription} placeholder="Ej: Almuerzo con Facu" style={{ marginBottom: 10 }} />
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 4 }}>Categoría</div>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 13 }}>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-        </select>
-      </div>
-      <button onClick={submit} style={{ width: "100%", padding: "10px 0", borderRadius: 8, border: "none", cursor: "pointer", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 13 }}>
-        Guardar movimiento
-      </button>
     </div>
   );
 }
