@@ -88,8 +88,12 @@ Crea un proyecto nuevo en [supabase.com](https://supabase.com), abre el
 leerla o modificarla):
 
 ```sql
+-- las llaves primarias son compuestas (id, user_id), no solo id: las
+-- categorías por defecto usan el mismo id fijo ("comida", "transporte", …)
+-- para todos los usuarios, así que con id solo como primary key la segunda
+-- cuenta que se registra choca con las filas que ya sembró la primera.
 create table transactions (
-  id text primary key,
+  id text not null,
   key text not null,
   date date not null,
   description text not null,
@@ -99,24 +103,27 @@ create table transactions (
   source text not null,
   reconciled boolean not null default false,
   matched_id text,
-  user_id uuid not null default auth.uid() references auth.users (id)
+  user_id uuid not null default auth.uid() references auth.users (id),
+  primary key (id, user_id)
 );
 
 create table categories (
-  id text primary key,
+  id text not null,
   label text not null,
   color text not null,
   icon text,
   exclude_from_expense boolean not null default false,
-  user_id uuid not null default auth.uid() references auth.users (id)
+  user_id uuid not null default auth.uid() references auth.users (id),
+  primary key (id, user_id)
 );
 
 create table merchant_rules (
-  id text primary key,
+  id text not null,
   match_text text not null,
   category_id text not null,
   alias text,
-  user_id uuid not null default auth.uid() references auth.users (id)
+  user_id uuid not null default auth.uid() references auth.users (id),
+  primary key (id, user_id)
 );
 
 -- una sola fila por usuario: guarda el ajuste manual de saldo y la
