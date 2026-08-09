@@ -700,7 +700,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
             <FieldInput label="Fecha" type="date" value={date} onChange={setDate} />
             <FieldInput label="Monto (CLP)" type="number" value={amount} onChange={setAmount} placeholder="0" />
           </div>
-          <FieldInput label="Descripción" value={description} onChange={setDescription} placeholder="Ej: Almuerzo con Facu" style={{ marginBottom: 12 }} />
+          <FieldInput label="Descripción" value={description} onChange={setDescription} style={{ marginBottom: 12 }} />
           <button onClick={submit} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "none", cursor: "pointer", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 13.5 }}>
             Guardar movimiento
           </button>
