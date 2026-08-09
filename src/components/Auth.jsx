@@ -3,12 +3,12 @@ import { TOKENS } from "../lib/constants.js";
 import { FieldInput } from "./Shared.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 
-export function Auth() {
+export function Auth({ initialError }) {
   const [mode, setMode] = useState("signin"); // "signin" | "signup" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(initialError ? translateAuthError(initialError) : null);
   const [info, setInfo] = useState(null);
 
   const switchMode = (next) => {
@@ -30,7 +30,11 @@ export function Auth() {
         if (resetError) throw resetError;
         setInfo("Si esa cuenta existe, te llegó un correo con un link para elegir una nueva contraseña.");
       } else if (mode === "signup") {
-        const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin + import.meta.env.BASE_URL },
+        });
         if (signUpError) throw signUpError;
         if (!data.session) {
           setInfo("Cuenta creada. Revisa tu correo y confirma tu email antes de iniciar sesión.");
@@ -114,5 +118,6 @@ function translateAuthError(message) {
   if (/invalid login credentials/i.test(message)) return "Email o contraseña incorrectos.";
   if (/email not confirmed/i.test(message)) return "Todavía no confirmaste tu email. Revisa tu bandeja de entrada.";
   if (/user already registered/i.test(message)) return "Ya existe una cuenta con ese email.";
+  if (/link is invalid or has expired/i.test(message)) return "El link del correo venció o ya fue usado. Pedí uno nuevo.";
   return message;
 }
