@@ -160,14 +160,14 @@ function AppearancePicker({ color, icon, budget, type, onColorChange, onIconChan
         <>
           <div style={{ fontSize: 10.5, color: TOKENS.textFaint, marginBottom: 8 }}>Tipo</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            {[["expense", "Gasto"], ["income", "Ingreso"]].map(([v, text]) => {
+            {[["expense", "Gasto", TOKENS.expense], ["income", "Ingreso", TOKENS.income], ["both", "Ambos", TOKENS.accent]].map(([v, text, accent]) => {
               const selected = (type || "expense") === v;
-              const accent = v === "expense" ? TOKENS.expense : TOKENS.income;
               return (
                 <button
                   key={v}
                   onClick={() => onTypeChange(v)}
                   aria-pressed={selected}
+                  title={v === "both" ? "Se sugiere tanto al cargar gastos como ingresos (ej. transferencias)" : undefined}
                   style={{
                     flex: 1, padding: "7px 0", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer",
                     border: `1px solid ${selected ? accent : TOKENS.border}`,

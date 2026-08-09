@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles } from "lucide-react";
-import { TOKENS, resolveCategoryIcon, categoryType } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon, categoryMatchesType } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
@@ -632,7 +632,7 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
   // que ya tenía asignada, que se mantiene visible aunque no calce, para no
   // esconder la selección actual.
   const txType = t.amount >= 0 ? "income" : "expense";
-  const relevantCategories = categories.filter((c) => categoryType(c) === txType || c.id === t.category);
+  const relevantCategories = categories.filter((c) => categoryMatchesType(c, txType) || c.id === t.category);
 
   return (
     <div style={{ background: TOKENS.surfaceAlt, padding: "14px 16px", borderTop: `1px solid ${TOKENS.border}` }}>
@@ -685,7 +685,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
 
   // solo se ofrecen categorías del tipo elegido (gasto/ingreso), para no
   // mezclar "Comida" con "Sueldo" en la misma grilla.
-  const relevantCategories = categories.filter((c) => categoryType(c) === type);
+  const relevantCategories = categories.filter((c) => categoryMatchesType(c, type));
 
   useEffect(() => {
     if (!relevantCategories.some((c) => c.id === category)) {

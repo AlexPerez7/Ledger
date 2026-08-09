@@ -28,10 +28,12 @@ export const TOKENS = {
 // heatmap, gráficos ni en el hero — pensado para transferencias entre tus
 // propias cuentas (ahorro, etc.), que salen de la cuenta corriente pero no
 // son consumo real.
-// type: "income" | "expense" — no filtra los gráficos (esos ya separan por
-// el signo del monto), solo qué categorías se sugieren al cargar un
-// movimiento manual o editar uno, para no mezclar "Comida" con "Sueldo" en
-// el mismo selector.
+// type: "income" | "expense" | "both" — no filtra los gráficos (esos ya
+// separan por el signo del monto), solo qué categorías se sugieren al
+// cargar un movimiento manual o editar uno, para no mezclar "Comida" con
+// "Sueldo" en el mismo selector. "both" es para categorías que aplican en
+// los dos sentidos (ej. Transferencias: puede que te transfieran a ti o que
+// tú transfieras) — esas se sugieren siempre, sin importar el signo.
 export const DEFAULT_CATEGORIES = [
   { id: "ingreso", label: "Ingresos", color: "#3FBF8F", icon: "TrendingUp", type: "income", excludeFromExpense: false },
   { id: "comida", label: "Comida y delivery", color: "#E8654F", icon: "Utensils", type: "expense", excludeFromExpense: false },
@@ -40,7 +42,7 @@ export const DEFAULT_CATEGORIES = [
   { id: "compras", label: "Compras", color: "#5B9BD5", icon: "ShoppingBag", type: "expense", excludeFromExpense: false },
   { id: "servicios", label: "Servicios y cuentas", color: "#D98E52", icon: "Receipt", type: "expense", excludeFromExpense: false },
   { id: "salud", label: "Salud y cuidado personal", color: "#6FCF97", icon: "HeartPulse", type: "expense", excludeFromExpense: false },
-  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight", type: "expense", excludeFromExpense: true },
+  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight", type: "both", excludeFromExpense: true },
   { id: "efectivo", label: "Retiro de efectivo", color: "#A0A8B4", icon: "Banknote", type: "expense", excludeFromExpense: false },
   { id: "otros", label: "Otros", color: "#57646F", icon: "Shapes", type: "expense", excludeFromExpense: false },
 ];
@@ -50,8 +52,16 @@ export const DEFAULT_CATEGORIES = [
 // "income" solo para la categoría por defecto de ingresos, "expense" para
 // cualquier otra, así el filtro de los selectores sigue teniendo sentido.
 export function categoryType(cat) {
-  if (cat.type === "income" || cat.type === "expense") return cat.type;
+  if (cat.type === "income" || cat.type === "expense" || cat.type === "both") return cat.type;
   return cat.id === "ingreso" ? "income" : "expense";
+}
+
+// true si esa categoría debería sugerirse para un movimiento del tipo dado
+// ("income"/"expense"): las de tipo "both" (ej. Transferencias) califican
+// para los dos.
+export function categoryMatchesType(cat, wantedType) {
+  const t = categoryType(cat);
+  return t === "both" || t === wantedType;
 }
 
 export const DEFAULT_CATEGORY_ICON = Shapes;
