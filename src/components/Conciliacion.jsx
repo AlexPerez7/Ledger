@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Check, AlertTriangle, ScanLine, Info } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, AlertTriangle, ScanLine, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
 import { Panel, EmptyNote, EmptyState } from "./Shared.jsx";
@@ -13,6 +13,22 @@ function fmtMonth(m) {
 
 export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth }) {
   const [result, setResult] = useState(null);
+  const [showBankOnly, setShowBankOnly] = useState(false);
+  const bankExists = reconcileStats?.bankExists;
+
+  // conciliar es una operación segura de repetir (si no hay nada nuevo que
+  // calce, no toca la base de datos) — se corre sola al entrar a un mes con
+  // reporte del banco, en vez de obligar a tocar "Conciliar mes" primero.
+  useEffect(() => {
+    if (!currentMonth || !bankExists) return;
+    const n = reconcileMonth(currentMonth);
+    if (n > 0) setResult(n);
+  }, [currentMonth, bankExists, reconcileMonth]);
+
+  // colapsar la vista de "sin registro manual" al cambiar de mes — es la
+  // sección menos accionable, no tiene sentido dejarla abierta de un mes
+  // al revisar el siguiente.
+  useEffect(() => setShowBankOnly(false), [currentMonth]);
 
   if (!currentMonth || !reconcileStats) {
     return (
@@ -24,7 +40,7 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth }) {
     );
   }
 
-  const { confirmed, pendingNoReport, pendingMismatch, bankOnly, bankExists } = reconcileStats;
+  const { confirmed, pendingNoReport, pendingMismatch, bankOnly } = reconcileStats;
 
   return (
     <div>
@@ -76,12 +92,31 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth }) {
       )}
 
       {bankOnly.length > 0 && (
-        <Panel title={`Movimientos del banco sin registro manual (${bankOnly.length})`} right={null}>
-          <div style={{ fontSize: 11.5, color: TOKENS.textFaint, marginBottom: 10 }}>
-            Es normal: son movimientos que solo conoces por la cartola (compras con tarjeta, cargos automáticos, etc.).
+        <Panel
+          title={`Movimientos del banco sin registro manual (${bankOnly.length})`}
+          right={
+            <button
+              onClick={() => setShowBankOnly((v) => !v)}
+              aria-expanded={showBankOnly}
+              style={{
+                display: "flex", alignItems: "center", gap: 5, background: "none", border: "none",
+                color: TOKENS.textMuted, fontSize: 12, cursor: "pointer", padding: 4,
+              }}
+            >
+              {showBankOnly ? "Ocultar" : "Mostrar"}
+              {showBankOnly ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          }
+        >
+          <div style={{ fontSize: 11.5, color: TOKENS.textFaint, marginBottom: showBankOnly ? 10 : 0 }}>
+            Es normal: son movimientos que solo conoces por la cartola (compras con tarjeta, cargos automáticos, etc.) — no requieren nada de ti.
           </div>
-          {bankOnly.slice(0, 8).map((t) => <ReconcileRow key={t.id} t={t} icon={null} color={TOKENS.textMuted} />)}
-          {bankOnly.length > 8 && <div style={{ fontSize: 11.5, color: TOKENS.textFaint, marginTop: 6 }}>+ {bankOnly.length - 8} más</div>}
+          {showBankOnly && (
+            <>
+              {bankOnly.slice(0, 8).map((t) => <ReconcileRow key={t.id} t={t} icon={null} color={TOKENS.textMuted} />)}
+              {bankOnly.length > 8 && <div style={{ fontSize: 11.5, color: TOKENS.textFaint, marginTop: 6 }}>+ {bankOnly.length - 8} más</div>}
+            </>
+          )}
         </Panel>
       )}
     </div>
