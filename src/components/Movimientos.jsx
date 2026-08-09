@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, Loader2, Trash2, Sparkles } from "lucide-react";
+import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles } from "lucide-react";
 import { TOKENS, resolveCategoryIcon } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { useIsMobile } from "../lib/useIsMobile.js";
 import { exportBackup } from "../lib/exportBackup.js";
+import { exportCsv } from "../lib/exportCsv.js";
 
 const SWIPE_ACTION_WIDTH = 128; // ancho de los 2 botones (editar + borrar) revelados al deslizar
 
@@ -23,6 +24,7 @@ export function Movimientos({
   recentImportIds = [], onClearRecentImports,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   // se calcula una sola vez acá arriba y se pasa a cada TxRow — antes cada
   // fila llamaba useIsMobile() por su cuenta, lo que con una lista larga
   // significaba un listener de matchMedia por fila en vez de uno solo.
@@ -107,9 +109,35 @@ export function Movimientos({
     }
   };
 
+  const handleExportCsv = async () => {
+    if (exportingCsv) return;
+    setExportingCsv(true);
+    try {
+      await exportCsv();
+    } catch (e) {
+      console.error(e);
+      pushToast?.("error", "No se pudo generar el CSV. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+        <button
+          onClick={handleExportCsv}
+          disabled={exportingCsv}
+          title="Descarga tus movimientos en .csv, para abrir en Excel o Sheets"
+          style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
+            border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.textMuted,
+            fontSize: 12, cursor: exportingCsv ? "default" : "pointer", opacity: exportingCsv ? 0.7 : 1,
+          }}
+        >
+          {exportingCsv ? <Loader2 size={13} className="spin" /> : <FileSpreadsheet size={13} />}
+          {exportingCsv ? "Generando CSV…" : "Exportar CSV"}
+        </button>
         <button
           onClick={handleExportBackup}
           disabled={exportingBackup}
