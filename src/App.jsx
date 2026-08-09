@@ -425,6 +425,56 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     [transactions, persistTx]
   );
 
+  // corrige fecha/monto de un movimiento manual sin salir de Conciliación —
+  // pensado para el caso "posible descuadre": casi siempre es un typo en el
+  // monto o la fecha. Se recalcula `key` para que siga reflejando los datos
+  // reales del movimiento. No hace falta reconciliar acá: el efecto en
+  // Conciliacion.jsx vuelve a correr solo apenas `transactions` cambia.
+  const editManualEntry = useCallback(
+    (txId, { date, amount }) => {
+      const target = transactions.find((t) => t.id === txId);
+      if (!target) return;
+      // si ya estaba vinculado a un movimiento del banco, ese calce puede
+      // haber quedado obsoleto con el nuevo monto/fecha — se limpian los
+      // dos lados para que el banco vuelva a estar disponible (el efecto de
+      // conciliación en Conciliacion.jsx decide de nuevo apenas esto cambie).
+      const prevMatchedId = target.matchedId;
+      const isExpense = target.amount < 0;
+      const signedAmount = isExpense ? -Math.abs(amount) : Math.abs(amount);
+      const next = transactions.map((t) => {
+        if (t.id === txId) {
+          return {
+            ...t,
+            date,
+            amount: signedAmount,
+            key: makeKey(date, t.description, isExpense ? Math.abs(amount) : 0, isExpense ? 0 : Math.abs(amount)),
+            reconciled: false,
+            matchedId: null,
+          };
+        }
+        if (prevMatchedId && t.id === prevMatchedId) return { ...t, matchedId: null };
+        return t;
+      });
+      persistTx(next);
+    },
+    [transactions, persistTx]
+  );
+
+  // vincula a mano un movimiento manual con uno del banco cuando el calce
+  // automático (mismo monto, fecha ±3 días) no lo encontró — ej. el banco
+  // demoró más en procesarlo. Refleja el mismo shape que arma reconcileMonth.
+  const manualMatch = useCallback(
+    (manualId, bankId) => {
+      const next = transactions.map((t) => {
+        if (t.id === manualId) return { ...t, reconciled: true, matchedId: bankId };
+        if (t.id === bankId) return { ...t, matchedId: bankId };
+        return t;
+      });
+      persistTx(next);
+    },
+    [transactions, persistTx]
+  );
+
   // ---- derived data -----------------------------------------------------------
   const months = useMemo(() => {
     const s = new Set(transactions.map((t) => monthKey(t.date)));
@@ -682,7 +732,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         {tab === "conciliacion" && (
           <ErrorBoundary>
-            <Conciliacion currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth} />
+            <Conciliacion
+              currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth}
+              onEditManual={editManualEntry} onManualMatch={manualMatch}
+            />
           </ErrorBoundary>
         )}
       </main>
