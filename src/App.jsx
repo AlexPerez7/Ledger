@@ -354,15 +354,16 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
   // ---- category management ------------------------------------------------------
   const addCategory = useCallback(
-    (label) => {
+    (label, icon, color) => {
       const id = "cat_" + uid();
-      const color = PALETTE[categories.length % PALETTE.length];
-      persistCats([...categories, { id, label, color, icon: "Shapes", excludeFromExpense: false }]);
+      const resolvedColor = color || PALETTE[categories.length % PALETTE.length];
+      persistCats([...categories, { id, label, color: resolvedColor, icon: icon || "Shapes", excludeFromExpense: false }]);
     },
     [categories, persistCats]
   );
   const renameCategory = useCallback((id, label) => { persistCats(categories.map((c) => (c.id === id ? { ...c, label } : c))); }, [categories, persistCats]);
   const changeCategoryIcon = useCallback((id, icon) => { persistCats(categories.map((c) => (c.id === id ? { ...c, icon } : c))); }, [categories, persistCats]);
+  const changeCategoryColor = useCallback((id, color) => { persistCats(categories.map((c) => (c.id === id ? { ...c, color } : c))); }, [categories, persistCats]);
   const toggleCategoryExpense = useCallback(
     (id) => { persistCats(categories.map((c) => (c.id === id ? { ...c, excludeFromExpense: !c.excludeFromExpense } : c))); },
     [categories, persistCats]
@@ -590,7 +591,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         {tab !== "categorias" && <MonthBar months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter} />}
 
         {tab === "categorias" && (
-          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onToggleExpense={toggleCategoryExpense} />
+          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onColorChange={changeCategoryColor} onToggleExpense={toggleCategoryExpense} />
         )}
 
         {tab === "resumen" && (

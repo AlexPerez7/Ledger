@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { TOKENS, ICONS, ICON_NAMES, resolveCategoryIcon } from "../lib/constants.js";
+import { X } from "lucide-react";
+import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "../lib/constants.js";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { ToggleSwitch } from "./Shared.jsx";
 
@@ -8,9 +9,24 @@ import { ToggleSwitch } from "./Shared.jsx";
 // un control que no hace nada, así que se deshabilita para esa categoría.
 const INCOME_CATEGORY_ID = "ingreso";
 
-export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onToggleExpense }) {
+export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense }) {
   const [newLabel, setNewLabel] = useState("");
+  const [newIcon, setNewIcon] = useState("Shapes");
+  const [newColor, setNewColor] = useState(PALETTE[0]);
+  // "new" identifica el picker de la fila para agregar categoría; cualquier
+  // otro valor es el id de una categoría existente que se está editando.
   const [pickerFor, setPickerFor] = useState(null);
+
+  const submitAdd = () => {
+    if (!newLabel.trim()) return;
+    onAdd(newLabel.trim(), newIcon, newColor);
+    setNewLabel("");
+    setNewIcon("Shapes");
+    setNewColor(PALETTE[0]);
+    setPickerFor(null);
+  };
+
+  const NewIcon = ICONS[newIcon] || DEFAULT_CATEGORY_ICON;
 
   return (
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
@@ -30,8 +46,8 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
                   onClick={() => setPickerFor(pickerOpen ? null : c.id)}
-                  title="Cambiar ícono"
-                  aria-label={`Cambiar ícono de ${c.label}`}
+                  title="Cambiar ícono y color"
+                  aria-label={`Cambiar ícono y color de ${c.label}`}
                   aria-expanded={pickerOpen}
                   style={{
                     width: 32, height: 32, borderRadius: 8, background: `${c.color}22`, display: "flex",
@@ -62,47 +78,115 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                 />
               </div>
               {pickerOpen && (
-                <div style={{
-                  display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, padding: 10,
-                  background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8,
-                }}>
-                  {ICON_NAMES.map((name) => {
-                    const OptionIcon = ICONS[name];
-                    const selected = (c.icon || "Shapes") === name;
-                    return (
-                      <button
-                        key={name}
-                        title={name}
-                        onClick={() => { onIconChange(c.id, name); setPickerFor(null); }}
-                        style={{
-                          width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
-                          background: selected ? `${c.color}33` : "transparent",
-                          border: `1px solid ${selected ? c.color : TOKENS.border}`, cursor: "pointer", padding: 0,
-                        }}
-                      >
-                        <OptionIcon size={16} color={selected ? c.color : TOKENS.textMuted} />
-                      </button>
-                    );
-                  })}
-                </div>
+                <AppearancePicker
+                  color={c.color}
+                  icon={c.icon || "Shapes"}
+                  onColorChange={(color) => onColorChange(c.id, color)}
+                  onIconChange={(icon) => onIconChange(c.id, icon)}
+                  onClose={() => setPickerFor(null)}
+                />
               )}
             </div>
           );
         })}
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          value={newLabel}
-          onChange={(e) => setNewLabel(e.target.value)}
-          placeholder="Nueva categoría, ej: Claude / IA"
-          style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, color: TOKENS.text, fontSize: 13 }}
-        />
-        <button
-          onClick={() => { if (newLabel.trim()) { onAdd(newLabel.trim()); setNewLabel(""); } }}
-          style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 12.5, cursor: "pointer" }}
-        >
-          Agregar
+
+      <div style={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 10, padding: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setPickerFor(pickerFor === "new" ? null : "new")}
+            title="Elegir ícono y color"
+            aria-label="Elegir ícono y color de la nueva categoría"
+            aria-expanded={pickerFor === "new"}
+            style={{
+              width: 32, height: 32, borderRadius: 8, background: `${newColor}22`, display: "flex",
+              alignItems: "center", justifyContent: "center", flexShrink: 0, border: pickerFor === "new" ? `1px solid ${newColor}` : "1px solid transparent",
+              cursor: "pointer", padding: 0,
+            }}
+          >
+            <NewIcon size={16} color={newColor} />
+          </button>
+          <input
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submitAdd(); }}
+            placeholder="Nueva categoría, ej: Claude / IA"
+            style={{ flex: 1, minWidth: 0, padding: "6px 9px", borderRadius: 6, border: "none", background: "transparent", color: TOKENS.text, fontSize: 12.5 }}
+          />
+          <button
+            onClick={submitAdd}
+            style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 12.5, cursor: "pointer", flexShrink: 0 }}
+          >
+            Agregar
+          </button>
+        </div>
+        {pickerFor === "new" && (
+          <AppearancePicker
+            color={newColor}
+            icon={newIcon}
+            onColorChange={setNewColor}
+            onIconChange={setNewIcon}
+            onClose={() => setPickerFor(null)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// selector combinado de color + ícono — se usa tanto para editar una
+// categoría existente como para la que se está creando, así ambos flujos
+// tienen la misma experiencia.
+function AppearancePicker({ color, icon, onColorChange, onIconChange, onClose }) {
+  return (
+    <div style={{
+      marginTop: 8, padding: 10, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ fontSize: 10.5, color: TOKENS.textFaint }}>Color</div>
+        <button onClick={onClose} aria-label="Cerrar selector" title="Listo" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer", padding: 2 }}>
+          <X size={13} />
         </button>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        {PALETTE.map((col) => {
+          const selected = col === color;
+          return (
+            <button
+              key={col}
+              onClick={() => onColorChange(col)}
+              title={col}
+              aria-label={`Usar color ${col}`}
+              aria-pressed={selected}
+              style={{
+                width: 26, height: 26, borderRadius: "50%", background: col, cursor: "pointer", padding: 0,
+                border: selected ? `2px solid ${TOKENS.text}` : "2px solid transparent", boxShadow: selected ? `0 0 0 1px ${TOKENS.surface}` : "none",
+              }}
+            />
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: 10.5, color: TOKENS.textFaint, marginBottom: 8 }}>Ícono</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {ICON_NAMES.map((name) => {
+          const OptionIcon = ICONS[name];
+          const selected = (icon || "Shapes") === name;
+          return (
+            <button
+              key={name}
+              title={name}
+              onClick={() => onIconChange(name)}
+              style={{
+                width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+                background: selected ? `${color}33` : "transparent",
+                border: `1px solid ${selected ? color : TOKENS.border}`, cursor: "pointer", padding: 0,
+              }}
+            >
+              <OptionIcon size={16} color={selected ? color : TOKENS.textMuted} />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
