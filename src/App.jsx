@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 
 import { TOKENS, DEFAULT_CATEGORIES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "./lib/constants.js";
 import { storage } from "./lib/storage.js";
@@ -363,6 +363,17 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const s = new Set(transactions.map((t) => monthKey(t.date)));
     return Array.from(s).filter(Boolean).sort().reverse();
   }, [transactions]);
+
+  // al entrar a la app, arrancar en el mes más reciente con datos en vez de
+  // "Todo" — solo una vez (así no pisa un cambio de mes que haga el usuario
+  // más tarde, ej. si borra los movimientos del mes actual).
+  const didSetDefaultMonth = useRef(false);
+  useEffect(() => {
+    if (!didSetDefaultMonth.current && months.length > 0) {
+      didSetDefaultMonth.current = true;
+      setMonthFilter(months[0]);
+    }
+  }, [months]);
 
   const currentMonth = monthFilter === "all" ? months[0] : monthFilter;
 
