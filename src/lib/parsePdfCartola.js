@@ -34,6 +34,7 @@ export async function parsePdfRows(buf) {
 
     let cargoX = null;
     let abonoX = null;
+    let descX = null;
     let sawHeader = false;
 
     for (const y of ys) {
@@ -42,9 +43,11 @@ export async function parsePdfRows(buf) {
       if (!sawHeader) {
         const cargoItem = items.find((i) => i.str === "Cargo");
         const abonoItem = items.find((i) => i.str === "Abono");
-        if (cargoItem && abonoItem) {
+        const descItem = items.find((i) => i.str.startsWith("Descripci"));
+        if (cargoItem && abonoItem && descItem) {
           cargoX = cargoItem.x;
           abonoX = abonoItem.x;
+          descX = descItem.x;
           sawHeader = true;
         }
         continue; // todo lo anterior al encabezado es el resumen de saldos, no movimientos
@@ -71,7 +74,11 @@ export async function parsePdfRows(buf) {
         abono = rest[1].str;
       }
 
-      const descItems = items.filter((i) => i !== items[0] && !MONEY_RE.test(i.str));
+      // solo el texto de la columna "Descripción" (se excluyen Oficina y Nro
+      // Doc, que van antes) — así la descripción queda igual a la del .xls
+      // (que no trae esas columnas) y la deduplicación entre ambos formatos
+      // funciona: son la misma clave para el mismo movimiento.
+      const descItems = items.filter((i) => i.x >= descX - 5 && !MONEY_RE.test(i.str));
       const desc = descItems.map((i) => i.str).join(" ").replace(/\s+/g, " ").trim();
 
       dataRows.push([fecha, desc, cargo, abono, saldoItem.str]);
