@@ -141,8 +141,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         // dataRows (TODAS las filas crudas del Excel, sin filtrar), no el
         // array `imported` — así, si el archivo llega con movimientos que ya
         // estaban todos importados (`imported` queda vacío), el Saldo sigue
-        // extrayéndose igual. Sobre empates de fecha, se queda con la última
-        // que aparece en el archivo (los reportes del banco vienen ordenados).
+        // extrayéndose igual. Sobre empates de fecha (varios movimientos el
+        // mismo día), se queda con la PRIMERA que aparece en el archivo: los
+        // reportes del banco vienen con el movimiento más reciente arriba,
+        // así que la primera fila de esa fecha es la última transacción real
+        // de ese día (y su Saldo, el saldo vigente) — quedarse con la última
+        // fila del archivo daría el saldo de una transacción anterior ese
+        // mismo día, no el saldo actual.
         let latestRow = null;
 
         for (const r of dataRows) {
@@ -155,7 +160,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           // parser que ya limpia Cargo/Abono: saca $, espacios y puntos de
           // miles para dejar el entero.
           const saldoN = parseClpNumber(saldo);
-          if (!latestRow || date >= latestRow.date) latestRow = { date, saldo: saldoN };
+          if (!latestRow || date > latestRow.date) latestRow = { date, saldo: saldoN };
 
           const key = makeKey(date, String(desc), cargoN, abonoN);
           if (existingKeys.has(key)) continue;
