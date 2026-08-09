@@ -74,6 +74,15 @@ export function monthKey(iso) {
   return iso ? iso.slice(0, 7) : "";
 }
 
+// "2026-01" -> "2026-02". Se usa en conciliación: el banco puede anotar un
+// movimiento con "fecha contable" unos días después de la fecha real (ver
+// nextMonthKey callers), y eso a veces cruza al mes calendario siguiente.
+export function nextMonthKey(mKey) {
+  const [y, m] = mKey.split("-").map(Number);
+  const d = new Date(y, m, 1); // month es 1-indexado en mKey; pasarlo tal cual a Date (0-indexado) ya cae en el mes siguiente
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 const WEEKDAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MONTH_NAMES_LONG = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",

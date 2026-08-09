@@ -7,7 +7,7 @@ import { useToasts } from "./lib/useToasts.js";
 import { readFileWithProgress } from "./lib/readFile.js";
 import {
   autoCategory, applyMerchantRules, parseClpNumber, parseBankDate,
-  makeKey, monthKey, uid, computeInsights, formatCLP,
+  makeKey, monthKey, nextMonthKey, uid, computeInsights, formatCLP,
 } from "./lib/utils.js";
 
 import { Header, MonthBar, BottomNav } from "./components/Header.jsx";
@@ -413,17 +413,28 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   // ---- reconciliation ---------------------------------------------------------
   const reconcileMonth = useCallback(
     (mKey) => {
-      const inMonth = transactions.filter((t) => monthKey(t.date) === mKey);
-      const manuals = inMonth.filter((t) => t.source === "manual" && !t.reconciled);
-      const banks = inMonth.filter((t) => t.source === "bank");
+      const manuals = transactions.filter((t) => t.source === "manual" && !t.reconciled && monthKey(t.date) === mKey);
+      // el banco anota los traspasos con "fecha contable": si se hicieron
+      // después de las 14:00 en día hábil o en día inhábil, quedan
+      // registrados el día hábil siguiente — eso puede empujar la fecha del
+      // banco al mes calendario siguiente (ej. un traspaso del 31 en la
+      // tarde queda con fecha 1 o 2 del mes que sigue), así que también se
+      // buscan candidatos ahí, no solo dentro del mismo mes que el manual.
+      const nextKey = nextMonthKey(mKey);
+      const banks = transactions.filter((t) => t.source === "bank" && (monthKey(t.date) === mKey || monthKey(t.date) === nextKey));
 
       const updates = new Map();
       for (const m of manuals) {
         const match = banks.find((b) => {
           if (updates.has(b.id) || b.matchedId) return false;
           const sameAmount = Math.abs(b.amount - m.amount) < 1;
-          const dDate = Math.abs(new Date(b.date) - new Date(m.date)) / 86400000;
-          return sameAmount && dDate <= 3;
+          // la fecha contable del banco solo se atrasa respecto a la real,
+          // nunca se adelanta — la ventana es asimétrica hacia adelante
+          // (hasta 5 días, para cubrir fines de semana largos con feriado de
+          // por medio) y con un margen chico hacia atrás por si la fecha
+          // que anotaste a mano quedó un día después de la real.
+          const dDate = (new Date(b.date) - new Date(m.date)) / 86400000;
+          return sameAmount && dDate >= -2 && dDate <= 5;
         });
         if (match) {
           updates.set(m.id, { ...m, reconciled: true, matchedId: match.id });
@@ -474,8 +485,9 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   );
 
   // vincula a mano un movimiento manual con uno del banco cuando el calce
-  // automático (mismo monto, fecha ±3 días) no lo encontró — ej. el banco
-  // demoró más en procesarlo. Refleja el mismo shape que arma reconcileMonth.
+  // automático (mismo monto, fecha contable hasta 5 días después) no lo
+  // encontró — ej. el banco demoró aún más en procesarlo. Refleja el mismo
+  // shape que arma reconcileMonth.
   const manualMatch = useCallback(
     (manualId, bankId) => {
       const next = transactions.map((t) => {
@@ -666,11 +678,19 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const confirmed = manuals.filter((t) => t.reconciled);
     const pending = manuals.filter((t) => !t.reconciled);
     const bankExists = banks.length > 0;
+    const bankOnly = banks.filter((t) => !t.matchedId);
+    // candidatos para vincular a mano un "posible descuadre": además de lo
+    // sin vincular de este mes, suma lo del mes siguiente — un traspaso de
+    // fin de mes puede quedar con fecha contable ya en el mes que sigue (ver
+    // reconcileMonth), así que el banco podría haberlo anotado ahí.
+    const nextKey = nextMonthKey(currentMonth);
+    const nextMonthBankOnly = transactions.filter((t) => t.source === "bank" && !t.matchedId && monthKey(t.date) === nextKey);
     return {
       manuals, confirmed, pending, bankExists,
       pendingNoReport: bankExists ? [] : pending,
       pendingMismatch: bankExists ? pending : [],
-      bankOnly: banks.filter((t) => !t.matchedId),
+      bankOnly,
+      linkCandidates: [...bankOnly, ...nextMonthBankOnly],
     };
   }, [transactions, currentMonth]);
 

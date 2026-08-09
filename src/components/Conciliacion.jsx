@@ -40,7 +40,7 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth, onE
     );
   }
 
-  const { confirmed, pendingNoReport, pendingMismatch, bankOnly } = reconcileStats;
+  const { confirmed, pendingNoReport, pendingMismatch, bankOnly, linkCandidates } = reconcileStats;
 
   return (
     <div>
@@ -53,7 +53,7 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth, onE
         }
       >
         <div style={{ fontSize: 12.5, color: TOKENS.textMuted, marginBottom: 4 }}>
-          El reporte del banco es la fuente oficial: compara tus movimientos manuales contra él (mismo monto, fecha con hasta 3 días de diferencia) y confirma los que calzan.
+          El reporte del banco es la fuente oficial: compara tus movimientos manuales contra él (mismo monto, hasta 5 días después por la fecha contable del banco) y confirma los que calzan.
         </div>
         {result !== null && (
           <div style={{ fontSize: 12, color: TOKENS.income, marginTop: 6 }}>
@@ -88,7 +88,7 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth, onE
             Ya subiste el reporte de este mes, pero estos movimientos manuales no encontraron un cargo o abono equivalente. Revisa el monto, la fecha, o si el banco aún no procesa ese movimiento.
           </div>
           {pendingMismatch.map((t) => (
-            <MismatchRow key={t.id} t={t} bankCandidates={bankOnly} onEdit={onEditManual} onMatch={onManualMatch} />
+            <MismatchRow key={t.id} t={t} bankCandidates={linkCandidates} onEdit={onEditManual} onMatch={onManualMatch} />
           ))}
         </Panel>
       )}

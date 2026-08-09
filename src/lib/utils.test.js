@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   autoCategory, suggestMatchKey, applyMerchantRules, parseClpNumber,
-  parseBankDate, makeKey, formatCLP, formatDateDisplay, monthKey, uid,
+  parseBankDate, makeKey, formatCLP, formatDateDisplay, monthKey, nextMonthKey, uid,
   formatDayHeading, groupByDate,
 } from "./utils.js";
 
@@ -72,6 +72,15 @@ describe("monthKey", () => {
   });
   it("devuelve vacío si no hay fecha", () => {
     expect(monthKey("")).toBe("");
+  });
+});
+
+describe("nextMonthKey", () => {
+  it("avanza al mes siguiente dentro del mismo año", () => {
+    expect(nextMonthKey("2026-07")).toBe("2026-08");
+  });
+  it("cruza de diciembre a enero del año siguiente", () => {
+    expect(nextMonthKey("2025-12")).toBe("2026-01");
   });
 });
 
