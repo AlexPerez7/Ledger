@@ -23,7 +23,7 @@ export function HeroStat({ spentSoFar, typicalPace, dayOfMonth, monthKey, isReal
       padding: "22px 24px", marginBottom: 20,
     }}>
       <div style={{ fontSize: 12.5, color: TOKENS.textMuted, marginBottom: 6 }}>
-        Llevas gastado en {monthLabel}{isRealCurrentMonth ? ` · día ${dayOfMonth}` : ""}
+        {isRealCurrentMonth ? `Llevas gastado en ${monthLabel} · día ${dayOfMonth}` : `Gastaste en ${monthLabel}`}
       </div>
       <div className="mono" style={{ fontSize: 34, fontWeight: 700, color: TOKENS.text, letterSpacing: "-0.01em", lineHeight: 1.1 }}>
         {formatCLP(spentSoFar)}

@@ -122,6 +122,12 @@ export function computeInsights(transactions, excludedCategoryIds, getCatLabel, 
   const prevDate = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
   const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
 
+  // el mes seleccionado puede ser uno ya cerrado, no necesariamente el
+  // calendario real — el texto de cada insight cambia de tiempo verbal
+  // según corresponda (presente para el mes en curso, pasado para uno viejo).
+  const now = new Date();
+  const isRealCurrentMonth = referenceDate.getFullYear() === now.getFullYear() && referenceDate.getMonth() === now.getMonth();
+
   const isExpense = (t) => t.amount < 0 && !excludedCategoryIds.has(t.category);
 
   const sumByCat = (mk) => {
@@ -143,8 +149,9 @@ export function computeInsights(transactions, excludedCategoryIds, getCatLabel, 
 
   if (prev.total > 0) {
     const diffPct = ((cur.total - prev.total) / prev.total) * 100;
-    if (diffPct >= 5) list.push(`Llevas gastado ${Math.round(diffPct)}% más que el mes pasado en total.`);
-    else if (diffPct <= -5) list.push(`Llevas gastado ${Math.round(Math.abs(diffPct))}% menos que el mes pasado en total.`);
+    const verb = isRealCurrentMonth ? "Llevas gastado" : "Gastaste";
+    if (diffPct >= 5) list.push(`${verb} ${Math.round(diffPct)}% más que el mes pasado en total.`);
+    else if (diffPct <= -5) list.push(`${verb} ${Math.round(Math.abs(diffPct))}% menos que el mes pasado en total.`);
   }
 
   let biggest = null;
@@ -161,7 +168,7 @@ export function computeInsights(transactions, excludedCategoryIds, getCatLabel, 
     const label = getCatLabel(biggest.catId);
     list.push(
       biggest.pct === null
-        ? `Este mes empezaste a gastar en ${label} (${formatCLP(biggest.curVal)}).`
+        ? `${isRealCurrentMonth ? "Este mes" : "Ese mes"} empezaste a gastar en ${label} (${formatCLP(biggest.curVal)}).`
         : `Gastaste ${Math.round(biggest.pct)}% más en ${label} que el mes pasado.`
     );
   }
@@ -171,7 +178,13 @@ export function computeInsights(transactions, excludedCategoryIds, getCatLabel, 
     if (monthKey(t.date) === thisMonthKey && t.amount > 0) income += t.amount;
   }
   const savings = income - cur.total;
-  if (income > 0 && savings > 0) list.push(`¡Bien! Llevas ahorrado ${formatCLP(savings)} este mes.`);
+  if (income > 0 && savings > 0) {
+    list.push(
+      isRealCurrentMonth
+        ? `¡Bien! Llevas ahorrado ${formatCLP(savings)} este mes.`
+        : `¡Bien! Ahorraste ${formatCLP(savings)} ese mes.`
+    );
+  }
 
   return list.slice(0, 3);
 }
