@@ -26,7 +26,7 @@ function formatSyncDate(iso) {
 }
 
 export function Resumen({
-  stats, byCategory, categories, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
+  stats, byCategory, byIncomeCategory, categories, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
   dynamicBalance, lastSyncDate, onAdjustBalance, onCategoryClick,
 }) {
   const captureRef = useRef(null);
@@ -117,62 +117,21 @@ export function Resumen({
         <StatCard label="Balance del período" value={formatCLP(stats.balance)} accent={stats.balance >= 0 ? TOKENS.income : TOKENS.expense} />
       </div>
 
-      <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginBottom: 16 }}>
         <Panel title={`Gasto por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
-          {byCategory.length === 0 ? (
-            <EmptyState icon={PieChartIcon} title="Sin gastos este período" text="Los gastos categorizados van a aparecer aquí apenas importes o agregues movimientos." />
-          ) : (
-            <div className="category-chart-row" style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <div className="category-chart-pie" style={{ width: "55%", flexShrink: 0 }}>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={byCategory} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}
-                      onClick={onCategoryClick ? (entry) => onCategoryClick(entry.id) : undefined}
-                      style={{ cursor: onCategoryClick ? "pointer" : "default" }}
-                    >
-                      {byCategory.map((entry) => <Cell key={entry.id} fill={entry.color} stroke={TOKENS.surface} strokeWidth={2} />)}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }}
-                      itemStyle={{ color: TOKENS.text }}
-                      labelStyle={{ color: TOKENS.text }}
-                      formatter={(v) => formatCLP(v)}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
-                {byCategory.slice(0, 6).map((c) => {
-                  const CatIcon = c.icon;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => onCategoryClick?.(c.id)}
-                      title={`Ver movimientos de ${c.name}`}
-                      className="category-legend-row"
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5,
-                        background: "none", border: "none", padding: "4px 6px", margin: "0 -6px", borderRadius: 7,
-                        width: "calc(100% + 12px)", cursor: onCategoryClick ? "pointer" : "default", textAlign: "left",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted }}>
-                        <span style={{
-                          width: 18, height: 18, borderRadius: 5, background: `${c.color}22`, display: "flex",
-                          alignItems: "center", justifyContent: "center", flexShrink: 0,
-                        }}>
-                          <CatIcon size={11} color={c.color} />
-                        </span>
-                        {c.name}
-                      </div>
-                      <span className="mono" style={{ color: TOKENS.text }}>{formatCLP(c.value)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <CategoryDonut
+            data={byCategory} onCategoryClick={onCategoryClick}
+            emptyIcon={PieChartIcon} emptyTitle="Sin gastos este período"
+            emptyText="Los gastos categorizados van a aparecer aquí apenas importes o agregues movimientos."
+          />
+        </Panel>
+
+        <Panel title={`Ingresos por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
+          <CategoryDonut
+            data={byIncomeCategory} onCategoryClick={onCategoryClick}
+            emptyIcon={PieChartIcon} emptyTitle="Sin ingresos este período"
+            emptyText="Los ingresos categorizados van a aparecer aquí apenas importes o agregues movimientos."
+          />
         </Panel>
 
         <Panel title="Últimos 6 meses">
@@ -259,6 +218,68 @@ export function Resumen({
           pushToast={pushToast}
         />
       )}
+    </div>
+  );
+}
+
+// donut + leyenda clickeable — se usa tanto para "Gasto por categoría" como
+// "Ingresos por categoría", mismo look para que se puedan comparar a simple
+// vista. En mobile, index.css apila el donut arriba de la leyenda (ver
+// .category-chart-row / .category-chart-pie).
+function CategoryDonut({ data, onCategoryClick, emptyIcon, emptyTitle, emptyText }) {
+  if (data.length === 0) {
+    return <EmptyState icon={emptyIcon} title={emptyTitle} text={emptyText} />;
+  }
+  return (
+    <div className="category-chart-row" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="category-chart-pie" style={{ width: "55%", flexShrink: 0 }}>
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie
+              data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}
+              onClick={onCategoryClick ? (entry) => onCategoryClick(entry.id) : undefined}
+              style={{ cursor: onCategoryClick ? "pointer" : "default" }}
+            >
+              {data.map((entry) => <Cell key={entry.id} fill={entry.color} stroke={TOKENS.surface} strokeWidth={2} />)}
+            </Pie>
+            <Tooltip
+              contentStyle={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 8, fontSize: 12 }}
+              itemStyle={{ color: TOKENS.text }}
+              labelStyle={{ color: TOKENS.text }}
+              formatter={(v) => formatCLP(v)}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+        {data.slice(0, 6).map((c) => {
+          const CatIcon = c.icon;
+          return (
+            <button
+              key={c.id}
+              onClick={() => onCategoryClick?.(c.id)}
+              title={`Ver movimientos de ${c.name}`}
+              className="category-legend-row"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5,
+                background: "none", border: "none", padding: "4px 6px", margin: "0 -6px", borderRadius: 7,
+                width: "calc(100% + 12px)", cursor: onCategoryClick ? "pointer" : "default", textAlign: "left",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted }}>
+                <span style={{
+                  width: 18, height: 18, borderRadius: 5, background: `${c.color}22`, display: "flex",
+                  alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <CatIcon size={11} color={c.color} />
+                </span>
+                {c.name}
+              </div>
+              <span className="mono" style={{ color: TOKENS.text }}>{formatCLP(c.value)}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

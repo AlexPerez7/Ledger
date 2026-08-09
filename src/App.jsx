@@ -560,6 +560,14 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       .sort((a, b) => b.value - a.value);
   }, [monthTx, getCat, isRealExpense]);
 
+  const byIncomeCategory = useMemo(() => {
+    const map = {};
+    monthTx.filter((t) => t.amount > 0).forEach((t) => { map[t.category] = (map[t.category] || 0) + t.amount; });
+    return Object.entries(map)
+      .map(([id, value]) => ({ id, name: getCat(id).label, value, color: getCat(id).color, icon: getCat(id).icon }))
+      .sort((a, b) => b.value - a.value);
+  }, [monthTx, getCat]);
+
   const byMonth = useMemo(() => {
     const map = {};
     transactions.forEach((t) => {
@@ -701,7 +709,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           <ErrorBoundary>
             <Suspense fallback={<ResumenSkeleton />}>
               <Resumen
-                stats={stats} byCategory={byCategory} categories={categories} byMonth={byMonth} currentMonth={currentMonth}
+                stats={stats} byCategory={byCategory} byIncomeCategory={byIncomeCategory} categories={categories} byMonth={byMonth} currentMonth={currentMonth}
                 dailySpend={dailySpend} hasTransactions={transactions.length > 0} heroStat={heroStat}
                 insights={insights} pushToast={pushToast}
                 dynamicBalance={dynamicBalance} lastSyncDate={accountSettings?.lastSyncDate}
