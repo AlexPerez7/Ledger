@@ -264,18 +264,19 @@ function CategoryDonut({ data, onCategoryClick, emptyIcon, emptyTitle, emptyText
                 display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5,
                 background: "none", border: "none", padding: "4px 6px", margin: "0 -6px", borderRadius: 7,
                 width: "calc(100% + 12px)", cursor: onCategoryClick ? "pointer" : "default", textAlign: "left",
+                overflow: "hidden",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, color: TOKENS.textMuted, minWidth: 0, overflow: "hidden" }}>
                 <span style={{
                   width: 18, height: 18, borderRadius: 5, background: `${c.color}22`, display: "flex",
                   alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
                   <CatIcon size={11} color={c.color} />
                 </span>
-                {c.name}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
               </div>
-              <span className="mono" style={{ color: TOKENS.text }}>{formatCLP(c.value)}</span>
+              <span className="mono" style={{ color: TOKENS.text, flexShrink: 0, marginLeft: 8, whiteSpace: "nowrap" }}>{formatCLP(c.value)}</span>
             </button>
           );
         })}
