@@ -84,6 +84,16 @@ button {
   font-family: inherit;
 }
 
+/* al tocar un botón en mobile, el navegador dibuja su propio resaltado
+   ("tap highlight") siguiendo el rectángulo del elemento, no su forma
+   visual — por eso se ve un destello cuadrado detrás de botones redondos
+   (ej. los íconos de categoría). Se desactiva y se deja que los propios
+   estilos :active/hover de cada botón sean el único feedback visual. */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
