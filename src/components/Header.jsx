@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon, Plus, PenLine, Upload } from "lucide-react";
+import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon, Plus, PenLine, Upload, HelpCircle } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
+import { HelpModal } from "./HelpModal.jsx";
 
 const TAB_ITEMS = [
   { id: "resumen", label: "Resumen", icon: LayoutGrid },
@@ -11,6 +12,7 @@ const TAB_ITEMS = [
 ];
 
 export function Header({ tab, setTab, onSignOut, theme, onToggleTheme }) {
+  const [showHelp, setShowHelp] = useState(false);
   return (
     <div style={{ borderBottom: `1px solid ${TOKENS.border}`, background: TOKENS.surface, position: "sticky", top: 0, zIndex: 10 }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
@@ -37,6 +39,16 @@ export function Header({ tab, setTab, onSignOut, theme, onToggleTheme }) {
               );
             })}
           </nav>
+          <button
+            onClick={() => setShowHelp(true)}
+            title="Cómo usar la app"
+            aria-label="Cómo usar la app"
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
+              border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
+            }}>
+            <HelpCircle size={13} />
+          </button>
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}
@@ -59,6 +71,7 @@ export function Header({ tab, setTab, onSignOut, theme, onToggleTheme }) {
           )}
         </div>
       </div>
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
