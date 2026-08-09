@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { X } from "lucide-react";
 import { TOKENS, ICONS, ICON_NAMES, resolveCategoryIcon } from "../lib/constants.js";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { ToggleSwitch } from "./Shared.jsx";
@@ -9,20 +8,17 @@ import { ToggleSwitch } from "./Shared.jsx";
 // un control que no hace nada, así que se deshabilita para esa categoría.
 const INCOME_CATEGORY_ID = "ingreso";
 
-export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onToggleExpense, onClose }) {
+export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onToggleExpense }) {
   const [newLabel, setNewLabel] = useState("");
   const [pickerFor, setPickerFor] = useState(null);
 
   return (
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-        <div>
-          <div className="display" style={{ fontSize: 13.5, fontWeight: 600 }}>Categorías</div>
-          <div style={{ fontSize: 11, color: TOKENS.textFaint, marginTop: 3, lineHeight: 1.4, maxWidth: 320 }}>
-            El interruptor de cada fila define si esa categoría cuenta como gasto en resúmenes y gráficos.
-          </div>
+      <div style={{ marginBottom: 14 }}>
+        <div className="display" style={{ fontSize: 13.5, fontWeight: 600 }}>Categorías</div>
+        <div style={{ fontSize: 11, color: TOKENS.textFaint, marginTop: 3, lineHeight: 1.4, maxWidth: 320 }}>
+          El interruptor de cada fila define si esa categoría cuenta como gasto en resúmenes y gráficos.
         </div>
-        <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer", flexShrink: 0 }}><X size={16} /></button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
         {categories.map((c) => {

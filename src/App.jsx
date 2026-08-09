@@ -39,7 +39,6 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const { toasts, push: pushToast, update: updateToast, dismiss: dismissToast } = useToasts();
   const [showManualForm, setShowManualForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [showCatManager, setShowCatManager] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return localStorage.getItem(ONBOARDING_KEY) !== "1"; } catch { return false; }
   });
@@ -546,7 +545,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
   return (
     <div style={{ background: TOKENS.bg, minHeight: "100vh", color: TOKENS.text, fontFamily: "'Inter', sans-serif" }}>
-      <Header tab={tab} setTab={setTab} onManageCats={() => setShowCatManager(true)} onSignOut={onSignOut} theme={theme} onToggleTheme={onToggleTheme} />
+      <Header tab={tab} setTab={setTab} onSignOut={onSignOut} theme={theme} onToggleTheme={onToggleTheme} />
 
       <main className="app-main" style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 80px" }}>
         {syncError && (
@@ -561,10 +560,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             </button>
           </div>
         )}
-        <MonthBar months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter} />
+        {tab !== "categorias" && <MonthBar months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter} />}
 
-        {showCatManager && (
-          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onToggleExpense={toggleCategoryExpense} onClose={() => setShowCatManager(false)} />
+        {tab === "categorias" && (
+          <CategoryManager categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory} onIconChange={changeCategoryIcon} onToggleExpense={toggleCategoryExpense} />
         )}
 
         {tab === "resumen" && (
@@ -612,7 +611,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         )}
       </main>
 
-      <BottomNav tab={tab} setTab={setTab} onManual={openManualEntry} onImport={openImportFlow} onManageCats={() => setShowCatManager(true)} />
+      <BottomNav tab={tab} setTab={setTab} onManual={openManualEntry} onImport={openImportFlow} />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
     </div>

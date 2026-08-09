@@ -7,9 +7,10 @@ const TAB_ITEMS = [
   { id: "resumen", label: "Resumen", icon: LayoutGrid },
   { id: "movimientos", label: "Movimientos", icon: ListChecks },
   { id: "conciliacion", label: "Conciliación", icon: ScanLine },
+  { id: "categorias", label: "Categorías", icon: Tag },
 ];
 
-export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTheme }) {
+export function Header({ tab, setTab, onSignOut, theme, onToggleTheme }) {
   return (
     <div style={{ borderBottom: `1px solid ${TOKENS.border}`, background: TOKENS.surface, position: "sticky", top: 0, zIndex: 10 }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
@@ -21,12 +22,6 @@ export function Header({ tab, setTab, onManageCats, onSignOut, theme, onToggleTh
           <div className="header-subtitle" style={{ color: TOKENS.textFaint, fontSize: 12, marginLeft: 2 }}>· cuenta corriente CLP</div>
         </div>
         <div className="header-controls" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={onManageCats} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8,
-            border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12.5, cursor: "pointer",
-          }}>
-            <Tag size={13} /> Categorías
-          </button>
           <nav className="top-tab-nav" style={{ display: "flex", gap: 4, background: TOKENS.surfaceAlt, padding: 4, borderRadius: 10, border: `1px solid ${TOKENS.border}` }}>
             {TAB_ITEMS.map((it) => {
               const Icon = it.icon;
@@ -85,19 +80,7 @@ function BottomTabButton({ it, tab, setTab }) {
   );
 }
 
-// no es una pestaña (no cambia `tab`, no queda "activo") — abre el mismo
-// overlay de Categorías que el botón del header, solo que accesible sin
-// tener que scrollear hasta arriba.
-function BottomActionButton({ icon: Icon, label, onClick }) {
-  return (
-    <button onClick={onClick} aria-label={label} className="bottom-tab-btn" style={{ color: TOKENS.textFaint }}>
-      <Icon size={20} strokeWidth={1.8} />
-      <span>{label}</span>
-    </button>
-  );
-}
-
-export function BottomNav({ tab, setTab, onManual, onImport, onManageCats }) {
+export function BottomNav({ tab, setTab, onManual, onImport }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef(null);
   const sheetRef = useRef(null);
@@ -145,7 +128,7 @@ export function BottomNav({ tab, setTab, onManual, onImport, onManageCats }) {
         )}
       </div>
       <BottomTabButton it={TAB_ITEMS[2]} tab={tab} setTab={setTab} />
-      <BottomActionButton icon={Tag} label="Categorías" onClick={onManageCats} />
+      <BottomTabButton it={TAB_ITEMS[3]} tab={tab} setTab={setTab} />
     </nav>
   );
 }
