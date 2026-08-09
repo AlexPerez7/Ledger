@@ -183,7 +183,14 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           const saldoN = parseClpNumber(saldo);
           if (!latestRow || date > latestRow.date) latestRow = { date, saldo: saldoN };
 
-          const key = makeKey(date, String(desc), cargoN, abonoN);
+          // se usa el Saldo (no la descripción) como parte de la clave: el
+          // banco no siempre escribe la descripción idéntica entre el .xls y
+          // la cartola en PDF (ej. la cartola a veces omite el código de país
+          // al final, "CHL"), pero el Saldo resultante de cada movimiento es
+          // el mismo en ambos formatos — y al ser un acumulado, es imposible
+          // que dos movimientos reales distintos compartan fecha+cargo+abono+
+          // saldo salvo que sean el mismo movimiento.
+          const key = makeKey(date, String(saldoN), cargoN, abonoN);
           if (existingKeys.has(key)) continue;
           existingKeys.add(key);
           const amount = abonoN > 0 ? abonoN : -cargoN;
