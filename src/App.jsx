@@ -131,21 +131,30 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     })();
   }, []);
 
-  // ---- import xls -----------------------------------------------------------
+  // ---- import xls/pdf ---------------------------------------------------------
   const handleFile = useCallback(
     async (file) => {
       const toastId = pushToast("loading", "Leyendo archivo…", 0);
       try {
-        const XLSX = await import("xlsx"); // solo se descarga al importar un archivo
+        const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
         const buf = await readFileWithProgress(file, (pct) => updateToast(toastId, "loading", "Leyendo archivo…", pct));
         updateToast(toastId, "loading", "Procesando movimientos…");
-        const wb = XLSX.read(buf, { type: "array" });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
 
-        let headerIdx = rows.findIndex((r) => r.some((c) => String(c).trim().toLowerCase() === "fecha"));
-        if (headerIdx === -1) headerIdx = 0;
-        const dataRows = rows.slice(headerIdx + 1).filter((r) => r[0] && String(r[0]).trim() !== "");
+        let dataRows;
+        if (isPdf) {
+          // solo se descarga al importar una cartola en PDF
+          const { parsePdfRows } = await import("./lib/parsePdfCartola.js");
+          dataRows = await parsePdfRows(buf);
+        } else {
+          const XLSX = await import("xlsx"); // solo se descarga al importar un .xls
+          const wb = XLSX.read(buf, { type: "array" });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
+
+          let headerIdx = rows.findIndex((r) => r.some((c) => String(c).trim().toLowerCase() === "fecha"));
+          if (headerIdx === -1) headerIdx = 0;
+          dataRows = rows.slice(headerIdx + 1).filter((r) => r[0] && String(r[0]).trim() !== "");
+        }
 
         const existingKeys = new Set(transactions.filter((t) => t.source === "bank").map((t) => t.key));
         const imported = [];

@@ -6,7 +6,7 @@ const STEPS = [
   {
     icon: Upload,
     title: "Sube tu archivo",
-    text: "Arrastra el .xls de movimientos de tu banco (o agrega un gasto a mano) para empezar a ver tus finanzas aquí.",
+    text: "Arrastra el .xls o la cartola .pdf de tu banco (o agrega un gasto a mano) para empezar a ver tus finanzas aquí.",
   },
   {
     icon: Tags,

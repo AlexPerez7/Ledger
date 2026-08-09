@@ -165,7 +165,7 @@ export function Movimientos({
         </select>
         {hasTransactions && (
           <>
-            <button onClick={() => setShowImportModal(true)} style={actionBtnStyle} title="Importar movimientos del banco desde un .xls">
+            <button onClick={() => setShowImportModal(true)} style={actionBtnStyle} title="Importar movimientos del banco desde un .xls o una cartola .pdf">
               <Upload size={13} /> Importar Excel
             </button>
             <button onClick={() => setShowManualForm((v) => !v)} className="new-record-btn" style={actionBtnStyle} title="Agregar un gasto o ingreso manual">
@@ -187,7 +187,7 @@ export function Movimientos({
             <EmptyState
               icon={Inbox}
               title="Todavía no hay movimientos"
-              text="Sube el .xls de tu banco o agrega un gasto o ingreso manual (arriba) para empezar a ver tus finanzas aquí."
+              text="Sube el .xls o la cartola .pdf de tu banco, o agrega un gasto o ingreso manual (arriba), para empezar a ver tus finanzas aquí."
             />
           ) : search || catFilter !== "all" ? (
             <EmptyState
@@ -371,13 +371,13 @@ function ImportDropzone({ onFile }) {
         background: dragOver ? "var(--tint-accent-soft)" : TOKENS.surface,
       }}
     >
-      <input type="file" accept=".xls,.xlsx" style={{ display: "none" }} onChange={(e) => e.target.files[0] && onFile(e.target.files[0])} />
+      <input type="file" accept=".xls,.xlsx,.pdf" style={{ display: "none" }} onChange={(e) => e.target.files[0] && onFile(e.target.files[0])} />
       <div style={{ width: 34, height: 34, borderRadius: 8, background: TOKENS.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <Upload size={16} color={TOKENS.accent} />
       </div>
       <div>
         <div style={{ fontSize: 13, fontWeight: 500 }}>Subir movimientos del banco</div>
-        <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>Arrastra el .xls de reportCollection o haz clic para elegirlo</div>
+        <div style={{ fontSize: 11.5, color: TOKENS.textFaint }}>Arrastra el .xls de reportCollection o la cartola en .pdf, o haz clic para elegirlo</div>
       </div>
     </label>
   );
