@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles } from "lucide-react";
-import { TOKENS, resolveCategoryIcon } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon, categoryType } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
@@ -627,13 +627,20 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
   const [remember, setRemember] = useState(t.source === "bank");
   const [matchText, setMatchText] = useState(suggestMatchKey(t.description));
 
+  // solo se ofrecen categorías del mismo tipo que el monto (ingreso/gasto),
+  // para no mezclar "Comida" con "Sueldo" en el mismo selector — salvo la
+  // que ya tenía asignada, que se mantiene visible aunque no calce, para no
+  // esconder la selección actual.
+  const txType = t.amount >= 0 ? "income" : "expense";
+  const relevantCategories = categories.filter((c) => categoryType(c) === txType || c.id === t.category);
+
   return (
     <div style={{ background: TOKENS.surfaceAlt, padding: "14px 16px", borderTop: `1px solid ${TOKENS.border}` }}>
       <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 4 }}>Categoría</div>
           <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: "100%", padding: "7px 9px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            {relevantCategories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
         </div>
         <div>
@@ -675,6 +682,17 @@ function ManualForm({ categories, onClose, onSubmit }) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("otros");
+
+  // solo se ofrecen categorías del tipo elegido (gasto/ingreso), para no
+  // mezclar "Comida" con "Sueldo" en la misma grilla.
+  const relevantCategories = categories.filter((c) => categoryType(c) === type);
+
+  useEffect(() => {
+    if (!relevantCategories.some((c) => c.id === category)) {
+      setCategory(relevantCategories[0]?.id || "otros");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type]);
 
   const submit = () => {
     const amt = parseFloat(amount);
@@ -718,7 +736,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
         <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1 }}>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 10 }}>Categoría</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-            {categories.map((c) => {
+            {relevantCategories.map((c) => {
               const CatIcon = resolveCategoryIcon(c);
               const selected = category === c.id;
               return (

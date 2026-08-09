@@ -28,18 +28,31 @@ export const TOKENS = {
 // heatmap, gráficos ni en el hero — pensado para transferencias entre tus
 // propias cuentas (ahorro, etc.), que salen de la cuenta corriente pero no
 // son consumo real.
+// type: "income" | "expense" — no filtra los gráficos (esos ya separan por
+// el signo del monto), solo qué categorías se sugieren al cargar un
+// movimiento manual o editar uno, para no mezclar "Comida" con "Sueldo" en
+// el mismo selector.
 export const DEFAULT_CATEGORIES = [
-  { id: "ingreso", label: "Ingresos", color: "#3FBF8F", icon: "TrendingUp", excludeFromExpense: false },
-  { id: "comida", label: "Comida y delivery", color: "#E8654F", icon: "Utensils", excludeFromExpense: false },
-  { id: "transporte", label: "Transporte", color: "#F0B94A", icon: "Car", excludeFromExpense: false },
-  { id: "suscripciones", label: "Suscripciones y juegos", color: "#9B87C4", icon: "Gamepad2", excludeFromExpense: false },
-  { id: "compras", label: "Compras", color: "#5B9BD5", icon: "ShoppingBag", excludeFromExpense: false },
-  { id: "servicios", label: "Servicios y cuentas", color: "#D98E52", icon: "Receipt", excludeFromExpense: false },
-  { id: "salud", label: "Salud y cuidado personal", color: "#6FCF97", icon: "HeartPulse", excludeFromExpense: false },
-  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight", excludeFromExpense: true },
-  { id: "efectivo", label: "Retiro de efectivo", color: "#A0A8B4", icon: "Banknote", excludeFromExpense: false },
-  { id: "otros", label: "Otros", color: "#57646F", icon: "Shapes", excludeFromExpense: false },
+  { id: "ingreso", label: "Ingresos", color: "#3FBF8F", icon: "TrendingUp", type: "income", excludeFromExpense: false },
+  { id: "comida", label: "Comida y delivery", color: "#E8654F", icon: "Utensils", type: "expense", excludeFromExpense: false },
+  { id: "transporte", label: "Transporte", color: "#F0B94A", icon: "Car", type: "expense", excludeFromExpense: false },
+  { id: "suscripciones", label: "Suscripciones y juegos", color: "#9B87C4", icon: "Gamepad2", type: "expense", excludeFromExpense: false },
+  { id: "compras", label: "Compras", color: "#5B9BD5", icon: "ShoppingBag", type: "expense", excludeFromExpense: false },
+  { id: "servicios", label: "Servicios y cuentas", color: "#D98E52", icon: "Receipt", type: "expense", excludeFromExpense: false },
+  { id: "salud", label: "Salud y cuidado personal", color: "#6FCF97", icon: "HeartPulse", type: "expense", excludeFromExpense: false },
+  { id: "transferencias", label: "Transferencias personales", color: "#7C8B9C", icon: "ArrowLeftRight", type: "expense", excludeFromExpense: true },
+  { id: "efectivo", label: "Retiro de efectivo", color: "#A0A8B4", icon: "Banknote", type: "expense", excludeFromExpense: false },
+  { id: "otros", label: "Otros", color: "#57646F", icon: "Shapes", type: "expense", excludeFromExpense: false },
 ];
+
+// categorías creadas antes de que existiera este campo (o leídas desde una
+// base sin la columna `type` todavía) no tienen `type` guardado — se asume
+// "income" solo para la categoría por defecto de ingresos, "expense" para
+// cualquier otra, así el filtro de los selectores sigue teniendo sentido.
+export function categoryType(cat) {
+  if (cat.type === "income" || cat.type === "expense") return cat.type;
+  return cat.id === "ingreso" ? "income" : "expense";
+}
 
 export const DEFAULT_CATEGORY_ICON = Shapes;
 

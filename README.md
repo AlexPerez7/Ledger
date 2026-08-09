@@ -31,6 +31,10 @@ cualquier dispositivo.
   transferencias entre tus propias cuentas (ahorro, etc.), que salen de la
   cuenta corriente pero no son consumo real — se excluyen de todos los
   cálculos de gasto sin dejar de aparecer en la lista de movimientos.
+- Cada categoría se marca como de gasto o de ingreso, para poder tener
+  categorías propias de ingreso (Sueldo, Reembolsos, etc.) además de la
+  categoría "Ingresos" genérica — los selectores de categoría solo sugieren
+  las del tipo que corresponde según el monto del movimiento.
 
 **Resumen**
 - Hero con lo gastado en lo que va del mes y comparación contra el mismo
@@ -121,6 +125,7 @@ create table categories (
   icon text,
   exclude_from_expense boolean not null default false,
   budget numeric, -- presupuesto mensual opcional; null = sin límite definido
+  type text, -- "income" | "expense"; null = se infiere ("ingreso" -> income, el resto -> expense)
   user_id uuid not null default auth.uid() references auth.users (id),
   primary key (id, user_id)
 );

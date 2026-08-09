@@ -1,28 +1,25 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "../lib/constants.js";
+import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon, categoryType } from "../lib/constants.js";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { ToggleSwitch, FieldInput } from "./Shared.jsx";
 
-// Los ingresos son montos positivos: el filtro de gasto (t.amount < 0) ya los
-// excluye siempre, sin importar este flag — mostrar el interruptor ahí sería
-// un control que no hace nada, así que se deshabilita para esa categoría.
-const INCOME_CATEGORY_ID = "ingreso";
-
-export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange }) {
+export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange, onTypeChange }) {
   const [newLabel, setNewLabel] = useState("");
   const [newIcon, setNewIcon] = useState("Shapes");
   const [newColor, setNewColor] = useState(PALETTE[0]);
+  const [newType, setNewType] = useState("expense");
   // "new" identifica el picker de la fila para agregar categoría; cualquier
   // otro valor es el id de una categoría existente que se está editando.
   const [pickerFor, setPickerFor] = useState(null);
 
   const submitAdd = () => {
     if (!newLabel.trim()) return;
-    onAdd(newLabel.trim(), newIcon, newColor);
+    onAdd(newLabel.trim(), newIcon, newColor, newType);
     setNewLabel("");
     setNewIcon("Shapes");
     setNewColor(PALETTE[0]);
+    setNewType("expense");
     setPickerFor(null);
   };
 
@@ -40,7 +37,10 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
         {categories.map((c) => {
           const CatIcon = resolveCategoryIcon(c);
           const pickerOpen = pickerFor === c.id;
-          const isIncome = c.id === INCOME_CATEGORY_ID;
+          // Los ingresos son montos positivos: el filtro de gasto (t.amount < 0)
+          // ya los excluye siempre, sin importar este flag — mostrar el
+          // interruptor ahí sería un control que no hace nada.
+          const isIncome = categoryType(c) === "income";
           return (
             <div key={c.id} style={{ background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 10, padding: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -82,9 +82,11 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
                   color={c.color}
                   icon={c.icon || "Shapes"}
                   budget={c.budget}
+                  type={categoryType(c)}
                   onColorChange={(color) => onColorChange(c.id, color)}
                   onIconChange={(icon) => onIconChange(c.id, icon)}
                   onBudgetChange={(budget) => onBudgetChange(c.id, budget)}
+                  onTypeChange={(type) => onTypeChange(c.id, type)}
                   onClose={() => setPickerFor(null)}
                 />
               )}
@@ -126,8 +128,10 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
           <AppearancePicker
             color={newColor}
             icon={newIcon}
+            type={newType}
             onColorChange={setNewColor}
             onIconChange={setNewIcon}
+            onTypeChange={setNewType}
             onClose={() => setPickerFor(null)}
           />
         )}
@@ -139,7 +143,7 @@ export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconC
 // selector combinado de color + ícono — se usa tanto para editar una
 // categoría existente como para la que se está creando, así ambos flujos
 // tienen la misma experiencia.
-function AppearancePicker({ color, icon, budget, onColorChange, onIconChange, onBudgetChange, onClose }) {
+function AppearancePicker({ color, icon, budget, type, onColorChange, onIconChange, onBudgetChange, onTypeChange, onClose }) {
   const [budgetInput, setBudgetInput] = useState(budget != null ? String(budget) : "");
   return (
     <div style={{
@@ -151,6 +155,34 @@ function AppearancePicker({ color, icon, budget, onColorChange, onIconChange, on
           <X size={13} />
         </button>
       </div>
+
+      {onTypeChange && (
+        <>
+          <div style={{ fontSize: 10.5, color: TOKENS.textFaint, marginBottom: 8 }}>Tipo</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            {[["expense", "Gasto"], ["income", "Ingreso"]].map(([v, text]) => {
+              const selected = (type || "expense") === v;
+              const accent = v === "expense" ? TOKENS.expense : TOKENS.income;
+              return (
+                <button
+                  key={v}
+                  onClick={() => onTypeChange(v)}
+                  aria-pressed={selected}
+                  style={{
+                    flex: 1, padding: "7px 0", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    border: `1px solid ${selected ? accent : TOKENS.border}`,
+                    background: selected ? `${accent}22` : "transparent",
+                    color: selected ? accent : TOKENS.textMuted,
+                  }}
+                >
+                  {text}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
         {PALETTE.map((col) => {
           const selected = col === color;
@@ -192,7 +224,7 @@ function AppearancePicker({ color, icon, budget, onColorChange, onIconChange, on
         })}
       </div>
 
-      {onBudgetChange && (
+      {onBudgetChange && type !== "income" && (
         <>
           <div style={{ width: "100%", height: 1, background: TOKENS.border, margin: "12px 0" }} />
           <FieldInput
