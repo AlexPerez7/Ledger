@@ -16,6 +16,7 @@ import { Conciliacion } from "./components/Conciliacion.jsx";
 import { ToastStack } from "./components/Toast.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
+import { AppShellSkeleton, ResumenSkeleton, MovimientosSkeleton } from "./components/Shared.jsx";
 
 // recharts y framer-motion solo hacen falta en sus tabs — se separan en sus
 // propios chunks para no pesar la carga inicial (que arranca en Resumen).
@@ -506,11 +507,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   }, [transactions, currentMonth]);
 
   if (!loaded) {
-    return (
-      <div style={{ background: TOKENS.bg, color: TOKENS.textMuted, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        Cargando…
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   return (
@@ -538,7 +535,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         {tab === "resumen" && (
           <ErrorBoundary>
-            <Suspense fallback={<div style={{ color: TOKENS.textFaint, padding: "40px 0", textAlign: "center", fontSize: 12.5 }}>Cargando…</div>}>
+            <Suspense fallback={<ResumenSkeleton />}>
               <Resumen
                 stats={stats} byCategory={byCategory} byMonth={byMonth} currentMonth={currentMonth}
                 dailySpend={dailySpend} hasTransactions={transactions.length > 0} heroStat={heroStat}
@@ -552,7 +549,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         {tab === "movimientos" && (
           <ErrorBoundary>
-            <Suspense fallback={<div style={{ color: TOKENS.textFaint, padding: "40px 0", textAlign: "center", fontSize: 12.5 }}>Cargando…</div>}>
+            <Suspense fallback={<MovimientosSkeleton />}>
               <Movimientos
                 filteredTx={filteredTx}
                 hasTransactions={transactions.length > 0}

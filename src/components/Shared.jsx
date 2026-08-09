@@ -1,5 +1,66 @@
 import { TOKENS } from "../lib/constants.js";
 
+export function Skeleton({ width = "100%", height = 14, radius = 6, style }) {
+  return <div className="skeleton" style={{ width, height, borderRadius: radius, background: TOKENS.surfaceAlt, ...style }} />;
+}
+
+export function AppShellSkeleton() {
+  return (
+    <div style={{ background: TOKENS.bg, minHeight: "100vh" }} aria-hidden="true">
+      <div style={{ borderBottom: `1px solid ${TOKENS.border}`, padding: "16px 24px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Skeleton width={110} height={24} radius={6} />
+          <Skeleton width={160} height={32} radius={8} />
+        </div>
+      </div>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px" }}>
+        <ResumenSkeleton />
+      </div>
+    </div>
+  );
+}
+
+export function ResumenSkeleton() {
+  return (
+    <div aria-hidden="true">
+      <Skeleton height={92} radius={12} style={{ marginBottom: 16 }} />
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <Skeleton height={64} radius={12} style={{ flex: "1 1 160px" }} />
+        <Skeleton height={64} radius={12} style={{ flex: "1 1 160px" }} />
+        <Skeleton height={64} radius={12} style={{ flex: "1 1 160px" }} />
+      </div>
+      <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Skeleton height={220} radius={12} />
+        <Skeleton height={220} radius={12} />
+      </div>
+      <Skeleton height={130} radius={12} />
+    </div>
+  );
+}
+
+export function MovimientosSkeleton() {
+  return (
+    <div aria-hidden="true">
+      <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+        <Skeleton height={36} radius={8} style={{ flex: "1 1 220px" }} />
+        <Skeleton height={36} radius={8} width={140} />
+      </div>
+      <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, overflow: "hidden" }}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < 4 ? `1px solid ${TOKENS.border}` : "none" }}>
+            <Skeleton width={32} height={32} radius={8} />
+            <div style={{ flex: 1 }}>
+              <Skeleton height={12} width="55%" style={{ marginBottom: 6 }} />
+              <Skeleton height={10} width="30%" />
+            </div>
+            <Skeleton height={12} width={60} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Panel({ title, right, children }) {
   return (
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18 }}>
