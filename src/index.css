@@ -102,6 +102,15 @@ select:focus-visible {
 }
 
 @media (max-width: 640px) {
+  /* Safari en iOS hace zoom automático al enfocar un input/select con
+     font-size menor a 16px — todos los campos de la app usan 11.5-13px
+     (bien para desktop), así que en mobile se fuerza 16px para evitarlo. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
   .app-main {
     padding: 20px 14px calc(72px + env(safe-area-inset-bottom)) !important;
   }
