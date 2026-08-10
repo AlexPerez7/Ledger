@@ -432,9 +432,17 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   );
 
   // ---- reconciliation ---------------------------------------------------------
+  // Conciliar FUSIONA el movimiento manual con el del banco en vez de dejar
+  // los dos como filas separadas: si no se hiciera así, el mismo gasto real
+  // quedaría contado dos veces en stats/categorías/gráficos (una vez como
+  // manual, otra como bancario) apenas el usuario anota algo a mano ANTES de
+  // que llegue el reporte del banco — que es justo el caso de uso principal
+  // de "agregar movimiento manual". La fila manual se borra y la del banco
+  // (la fuente oficial) hereda su categoría y alias, para no perder la
+  // categorización que el usuario ya le había puesto a mano.
   const reconcileMonth = useCallback(
     (mKey) => {
-      const manuals = transactions.filter((t) => t.source === "manual" && !t.reconciled && monthKey(t.date) === mKey);
+      const manuals = transactions.filter((t) => t.source === "manual" && monthKey(t.date) === mKey);
       // el banco anota los traspasos con "fecha contable": si se hicieron
       // después de las 14:00 en día hábil o en día inhábil, quedan
       // registrados el día hábil siguiente — eso puede empujar la fecha del
@@ -444,10 +452,11 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       const nextKey = nextMonthKey(mKey);
       const banks = transactions.filter((t) => t.source === "bank" && (monthKey(t.date) === mKey || monthKey(t.date) === nextKey));
 
-      const updates = new Map();
+      const bankUpdates = new Map();
+      const mergedManualIds = new Set();
       for (const m of manuals) {
         const match = banks.find((b) => {
-          if (updates.has(b.id) || b.matchedId) return false;
+          if (bankUpdates.has(b.id) || b.matchedId) return false;
           const sameAmount = Math.abs(b.amount - m.amount) < 1;
           // la fecha contable del banco solo se atrasa respecto a la real,
           // nunca se adelanta — la ventana es asimétrica hacia adelante
@@ -458,14 +467,16 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           return sameAmount && dDate >= -2 && dDate <= 5;
         });
         if (match) {
-          updates.set(m.id, { ...m, reconciled: true, matchedId: match.id });
-          updates.set(match.id, { ...match, matchedId: match.id });
+          bankUpdates.set(match.id, { ...match, matchedId: m.id, category: m.category, alias: m.alias || match.alias });
+          mergedManualIds.add(m.id);
         }
       }
-      if (updates.size === 0) return 0;
-      const next = transactions.map((t) => updates.get(t.id) || t);
+      if (mergedManualIds.size === 0) return 0;
+      const next = transactions
+        .filter((t) => !mergedManualIds.has(t.id))
+        .map((t) => bankUpdates.get(t.id) || t);
       persistTx(next);
-      return updates.size / 2;
+      return mergedManualIds.size;
     },
     [transactions, persistTx]
   );
@@ -473,32 +484,22 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   // corrige fecha/monto de un movimiento manual sin salir de Conciliación —
   // pensado para el caso "posible descuadre": casi siempre es un typo en el
   // monto o la fecha. Se recalcula `key` para que siga reflejando los datos
-  // reales del movimiento. No hace falta reconciliar acá: el efecto en
-  // Conciliacion.jsx vuelve a correr solo apenas `transactions` cambia.
+  // reales del movimiento. Solo se llama sobre manuales que TODAVÍA existen
+  // como fila propia, así que por definición no están fusionados con nada.
   const editManualEntry = useCallback(
     (txId, { date, amount }) => {
       const target = transactions.find((t) => t.id === txId);
       if (!target) return;
-      // si ya estaba vinculado a un movimiento del banco, ese calce puede
-      // haber quedado obsoleto con el nuevo monto/fecha — se limpian los
-      // dos lados para que el banco vuelva a estar disponible (el efecto de
-      // conciliación en Conciliacion.jsx decide de nuevo apenas esto cambie).
-      const prevMatchedId = target.matchedId;
       const isExpense = target.amount < 0;
       const signedAmount = isExpense ? -Math.abs(amount) : Math.abs(amount);
       const next = transactions.map((t) => {
-        if (t.id === txId) {
-          return {
-            ...t,
-            date,
-            amount: signedAmount,
-            key: makeKey(date, t.description, isExpense ? Math.abs(amount) : 0, isExpense ? 0 : Math.abs(amount)),
-            reconciled: false,
-            matchedId: null,
-          };
-        }
-        if (prevMatchedId && t.id === prevMatchedId) return { ...t, matchedId: null };
-        return t;
+        if (t.id !== txId) return t;
+        return {
+          ...t,
+          date,
+          amount: signedAmount,
+          key: makeKey(date, t.description, isExpense ? Math.abs(amount) : 0, isExpense ? 0 : Math.abs(amount)),
+        };
       });
       persistTx(next);
     },
@@ -507,15 +508,16 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
   // vincula a mano un movimiento manual con uno del banco cuando el calce
   // automático (mismo monto, fecha contable hasta 5 días después) no lo
-  // encontró — ej. el banco demoró aún más en procesarlo. Refleja el mismo
-  // shape que arma reconcileMonth.
+  // encontró — ej. el banco demoró aún más en procesarlo. Misma fusión que
+  // hace reconcileMonth: se borra la fila manual y el banco hereda su
+  // categoría y alias.
   const manualMatch = useCallback(
     (manualId, bankId) => {
-      const next = transactions.map((t) => {
-        if (t.id === manualId) return { ...t, reconciled: true, matchedId: bankId };
-        if (t.id === bankId) return { ...t, matchedId: bankId };
-        return t;
-      });
+      const manual = transactions.find((t) => t.id === manualId);
+      if (!manual) return;
+      const next = transactions
+        .filter((t) => t.id !== manualId)
+        .map((t) => (t.id === bankId ? { ...t, matchedId: manualId, category: manual.category, alias: manual.alias || t.alias } : t));
       persistTx(next);
     },
     [transactions, persistTx]
@@ -694,11 +696,14 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const reconcileStats = useMemo(() => {
     if (!currentMonth) return null;
     const inMonth = transactions.filter((t) => monthKey(t.date) === currentMonth);
+    // los manuales que quedan en pie son, por definición, los que todavía no
+    // se conciliaron: al conciliar (automático o "vincular a mano") la fila
+    // manual se fusiona en la del banco y desaparece, así que ya no hace
+    // falta filtrar por `reconciled` acá.
     const manuals = inMonth.filter((t) => t.source === "manual");
     const banks = inMonth.filter((t) => t.source === "bank");
-    const confirmed = manuals.filter((t) => t.reconciled);
-    const pending = manuals.filter((t) => !t.reconciled);
     const bankExists = banks.length > 0;
+    const confirmed = banks.filter((t) => t.matchedId);
     const bankOnly = banks.filter((t) => !t.matchedId);
     // candidatos para vincular a mano un "posible descuadre": además de lo
     // sin vincular de este mes, suma lo del mes siguiente — un traspaso de
@@ -707,9 +712,9 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const nextKey = nextMonthKey(currentMonth);
     const nextMonthBankOnly = transactions.filter((t) => t.source === "bank" && !t.matchedId && monthKey(t.date) === nextKey);
     return {
-      manuals, confirmed, pending, bankExists,
-      pendingNoReport: bankExists ? [] : pending,
-      pendingMismatch: bankExists ? pending : [],
+      manuals, confirmed, bankExists,
+      pendingNoReport: bankExists ? [] : manuals,
+      pendingMismatch: bankExists ? manuals : [],
       bankOnly,
       linkCandidates: [...bankOnly, ...nextMonthBankOnly],
     };
@@ -718,17 +723,21 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   // "salud" de conciliación por mes, para el selector de meses en la
   // pestaña Conciliación (✓ verde: todo lo manual calzó / ⚠ ámbar: hay
   // reporte del banco pero algo manual sigue sin calzar). Sin badge si el
-  // mes no tiene movimientos manuales, o si aún no se importa el reporte
-  // del banco de ese mes (nada que evaluar todavía).
+  // mes nunca tuvo movimientos manuales que conciliar, o si aún no se
+  // importa el reporte del banco de ese mes (nada que evaluar todavía).
   const monthHealth = useMemo(() => {
     const map = {};
     for (const mk of months) {
       const inMonth = transactions.filter((t) => monthKey(t.date) === mk);
       const manuals = inMonth.filter((t) => t.source === "manual");
-      if (manuals.length === 0) continue;
+      // los que ya se fusionaron con el banco tampoco quedan como manual —
+      // sin esto, un mes 100% conciliado (manuals.length === 0) se vería
+      // idéntico a un mes que nunca tuvo movimientos manuales.
+      const mergedCount = inMonth.filter((t) => t.source === "bank" && t.matchedId).length;
+      if (manuals.length === 0 && mergedCount === 0) continue;
       const bankExists = inMonth.some((t) => t.source === "bank");
       if (!bankExists) continue;
-      map[mk] = manuals.some((t) => !t.reconciled) ? "warn" : "ok";
+      map[mk] = manuals.length > 0 ? "warn" : "ok";
     }
     return map;
   }, [transactions, months]);

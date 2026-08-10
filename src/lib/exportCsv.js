@@ -30,7 +30,11 @@ export async function exportCsv() {
       labelById[t.category] || t.category,
       t.amount,
       t.source === "bank" ? "Banco" : "Manual",
-      t.reconciled ? "Sí" : "No",
+      // al conciliar, el registro manual se fusiona en el del banco (que se
+      // queda con matchedId) — así que "conciliado" ahora se mira en
+      // matchedId, no en el viejo flag `reconciled` (que ya no se usa: un
+      // manual que sigue existiendo, por definición, nunca se conciliaba).
+      t.matchedId ? "Sí" : "No",
     ]);
 
   const csv = [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");

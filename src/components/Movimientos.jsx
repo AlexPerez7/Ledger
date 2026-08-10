@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Upload, Plus, Check, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
+import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
 import { TOKENS, resolveCategoryIcon, categoryMatchesType } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
@@ -593,7 +593,6 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
               nuevo
             </span>
           )}
-          {t.source === "manual" && t.reconciled && <Check size={11} color={TOKENS.income} style={{ marginLeft: 5, verticalAlign: "-1px" }} />}
         </div>
         <div className="tx-cat" style={{ fontSize: 11.5, color: cat.color, display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
           <span style={{
