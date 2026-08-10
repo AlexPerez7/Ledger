@@ -393,6 +393,24 @@ select:focus-visible {
   display: flex;
 }
 
+/* pista visual de que la fila se puede deslizar — invisible en desktop,
+   donde las acciones ya se ven inline sin necesidad de deslizar. */
+.tx-swipe-hint {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .tx-swipe-hint {
+    display: flex;
+    align-items: center;
+    color: var(--color-text-faint);
+    opacity: 0.45;
+    flex-shrink: 0;
+    grid-area: actions;
+    justify-self: end;
+  }
+}
+
 .tx-swipe-btn {
   width: 64px;
   border: none;

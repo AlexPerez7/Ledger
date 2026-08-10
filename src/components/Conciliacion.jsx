@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Check, AlertTriangle, ScanLine, Info, ChevronDown, ChevronUp, Pencil, Link2, X } from "lucide-react";
+import { Check, AlertTriangle, ScanLine, Info, ChevronDown, ChevronUp, ChevronLeft, Pencil, Link2, X } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
 import { Panel, EmptyNote, EmptyState, FieldInput } from "./Shared.jsx";
@@ -253,6 +253,7 @@ function MismatchRow({ t, bankCandidates, onEdit, onMatch, isMobile }) {
               <Link2 size={13} />
             </button>
           </div>
+          <ChevronLeft size={13} className="tx-swipe-hint" />
         </Row>
       </div>
 
