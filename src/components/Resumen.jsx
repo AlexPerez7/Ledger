@@ -140,7 +140,7 @@ export function Resumen({
       <div className="resumen-charts-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginBottom: 16 }}>
         <Panel title={`Gasto por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
           <CategoryDonut
-            data={byCategory} onCategoryClick={onCategoryClick}
+            data={byCategory} onCategoryClick={onCategoryClick ? (id) => onCategoryClick(id, "expense") : undefined}
             emptyIcon={PieChartIcon} emptyTitle="Sin gastos este período"
             emptyText="Los gastos categorizados van a aparecer aquí apenas importes o agregues movimientos."
           />
@@ -148,7 +148,7 @@ export function Resumen({
 
         <Panel title={`Ingresos por categoría${currentMonth ? ` · ${fmtMonth(currentMonth)}` : ""}`}>
           <CategoryDonut
-            data={byIncomeCategory} onCategoryClick={onCategoryClick}
+            data={byIncomeCategory} onCategoryClick={onCategoryClick ? (id) => onCategoryClick(id, "income") : undefined}
             emptyIcon={PieChartIcon} emptyTitle="Sin ingresos este período"
             emptyText="Los ingresos categorizados van a aparecer aquí apenas importes o agregues movimientos."
           />
@@ -190,7 +190,7 @@ export function Resumen({
               return (
                 <button
                   key={c.id}
-                  onClick={() => onCategoryClick?.(c.id)}
+                  onClick={() => onCategoryClick?.(c.id, "expense")}
                   title={`Ver movimientos de ${c.name}`}
                   style={{ background: "none", border: "none", padding: 0, textAlign: "left", width: "100%", cursor: onCategoryClick ? "pointer" : "default" }}
                 >

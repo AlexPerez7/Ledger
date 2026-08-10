@@ -40,6 +40,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const [monthFilter, setMonthFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
+  const [txTypeFilter, setTxTypeFilter] = useState("all");
   const { toasts, push: pushToast, update: updateToast, dismiss: dismissToast } = useToasts();
   const [showManualForm, setShowManualForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -71,10 +72,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     setTab("movimientos");
     setShowImportModal(true);
   }, []);
-  // desde el gráfico/leyenda de "Gasto por categoría" en Resumen: salta a
-  // Movimientos ya filtrado por esa categoría (mismo mes seleccionado).
-  const goToCategoryMovements = useCallback((categoryId) => {
+  // desde el gráfico/leyenda de "Gasto por categoría" o "Ingresos por
+  // categoría" en Resumen: salta a Movimientos ya filtrado por esa
+  // categoría y por el tipo de movimiento del gráfico donde se hizo clic
+  // (mismo mes seleccionado), para no mezclar ingresos y gastos.
+  const goToCategoryMovements = useCallback((categoryId, txType = "all") => {
     setCatFilter(categoryId);
+    setTxTypeFilter(txType);
     setTab("movimientos");
   }, []);
 
@@ -556,6 +560,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const filteredTx = useMemo(() => {
     return monthTx
       .filter((t) => catFilter === "all" || t.category === catFilter)
+      .filter((t) => txTypeFilter === "all" || (txTypeFilter === "income" ? t.amount > 0 : t.amount < 0))
       .filter((t) => !search || t.description.toLowerCase().includes(search.toLowerCase()) || (t.alias || "").toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => {
         if (a.date !== b.date) return a.date < b.date ? 1 : -1;
@@ -563,7 +568,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         // app va arriba, no el orden en que vino en el archivo del banco.
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       });
-  }, [monthTx, catFilter, search]);
+  }, [monthTx, catFilter, txTypeFilter, search]);
 
   // categorías marcadas "no cuenta como gasto" (ej. transferencias a tus
   // propias cuentas) — se excluyen de todo cálculo de gasto, pero siguen
@@ -839,6 +844,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 getCat={getCat}
                 search={search} setSearch={setSearch}
                 catFilter={catFilter} setCatFilter={setCatFilter}
+                txTypeFilter={txTypeFilter} setTxTypeFilter={setTxTypeFilter}
                 saveTxEdit={saveTxEdit}
                 deleteTransaction={deleteTransaction}
                 showManualForm={showManualForm} setShowManualForm={setShowManualForm}
