@@ -8,10 +8,18 @@ import { supabase } from "./supabaseClient.js";
 // estado "sin ajustar" en vez de romper.
 export async function getAccountSettings() {
   try {
-    const { data, error } = await supabase.from("account_settings").select("base_balance, last_sync_date").maybeSingle();
+    const { data, error } = await supabase
+      .from("account_settings")
+      .select("base_balance, last_sync_date, savings_base, savings_base_date")
+      .maybeSingle();
     if (error) throw error;
     if (!data) return null;
-    return { baseBalance: Number(data.base_balance), lastSyncDate: data.last_sync_date };
+    return {
+      baseBalance: Number(data.base_balance),
+      lastSyncDate: data.last_sync_date,
+      savingsBase: data.savings_base != null ? Number(data.savings_base) : null,
+      savingsBaseDate: data.savings_base_date,
+    };
   } catch (e) {
     console.error("No se pudo leer account_settings desde Supabase", e);
     return null;
@@ -53,6 +61,40 @@ export async function saveAccountSettings(baseBalance, lastSyncDate = new Date()
     // se devuelve el mensaje real (no null) para poder mostrárselo al
     // usuario — sin esto, un fallo de Supabase (ej. RLS) queda invisible y
     // solo se ve en la consola del navegador, imposible de revisar en mobile.
+    return { error: e.message || String(e) };
+  }
+}
+
+// mismo patrón que saveAccountSettings (update, y si no había fila todavía
+// la crea) pero para el ajuste manual de "Total ahorrado" — un ancla
+// independiente del saldo de la cuenta corriente, para que el usuario pueda
+// declarar cuánto tenía ahorrado ANTES de empezar a usar la app (lo que ya
+// tenía no quedó registrado como movimientos, así que no hay de dónde
+// calcularlo solo).
+export async function saveSavingsBase(savingsBase, savingsBaseDate = new Date().toISOString()) {
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    const userId = userData?.user?.id;
+    if (!userId) throw new Error("No hay usuario autenticado");
+
+    const { data: updated, error: updateError } = await supabase
+      .from("account_settings")
+      .update({ savings_base: savingsBase, savings_base_date: savingsBaseDate })
+      .eq("user_id", userId)
+      .select();
+    if (updateError) throw updateError;
+
+    if (!updated || updated.length === 0) {
+      const { error: insertError } = await supabase
+        .from("account_settings")
+        .insert({ user_id: userId, savings_base: savingsBase, savings_base_date: savingsBaseDate });
+      if (insertError) throw insertError;
+    }
+
+    return { savingsBase, savingsBaseDate };
+  } catch (e) {
+    console.error("No se pudo guardar el ahorro base en Supabase", e);
     return { error: e.message || String(e) };
   }
 }

@@ -27,11 +27,12 @@ function formatSyncDate(iso) {
 
 export function Resumen({
   stats, byCategory, byIncomeCategory, categories, byMonth, currentMonth, dailySpend, hasTransactions, heroStat, insights, pushToast,
-  dynamicBalance, lastSyncDate, onAdjustBalance, onCategoryClick, totalSavings,
+  dynamicBalance, lastSyncDate, onAdjustBalance, onCategoryClick, totalSavings, onAdjustSavings,
 }) {
   const captureRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [showAdjustSavingsModal, setShowAdjustSavingsModal] = useState(false);
 
   // solo categorías con presupuesto definido — el gasto puede venir de
   // byCategory (ya calculado para el pie) o ser 0 si todavía no hay
@@ -116,7 +117,23 @@ export function Resumen({
         <StatCard label="Gastos" value={formatCLP(stats.expense)} icon={ArrowDownRight} accent={TOKENS.expense} />
         <StatCard label="Balance del período" value={formatCLP(stats.balance)} accent={stats.balance >= 0 ? TOKENS.income : TOKENS.expense} />
         {totalSavings != null && (
-          <StatCard label="Total ahorrado" value={formatCLP(totalSavings)} icon={PiggyBank} accent={TOKENS.income} sub="histórico" />
+          <StatCard
+            label="Total ahorrado"
+            value={formatCLP(totalSavings)}
+            icon={PiggyBank}
+            accent={TOKENS.income}
+            sub="histórico"
+            action={
+              <button
+                onClick={() => setShowAdjustSavingsModal(true)}
+                aria-label="Ajustar total ahorrado"
+                title="Ajustar total ahorrado"
+                style={{ background: "none", border: "none", cursor: "pointer", color: TOKENS.textFaint, padding: 0 }}
+              >
+                <Pencil size={13} />
+              </button>
+            }
+          />
         )}
       </div>
 
@@ -218,6 +235,15 @@ export function Resumen({
           currentBalance={dynamicBalance}
           onAdjust={onAdjustBalance}
           onClose={() => setShowAdjustModal(false)}
+          pushToast={pushToast}
+        />
+      )}
+
+      {showAdjustSavingsModal && (
+        <AdjustSavingsModal
+          currentSavings={totalSavings}
+          onAdjust={onAdjustSavings}
+          onClose={() => setShowAdjustSavingsModal(false)}
           pushToast={pushToast}
         />
       )}
@@ -334,6 +360,62 @@ function AdjustBalanceModal({ currentBalance, onAdjust, onClose, pushToast }) {
           }}
         >
           {saving ? "Guardando…" : "Guardar saldo"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// mismo patrón que AdjustBalanceModal pero para "Total ahorrado": deja
+// declarar cuánto ya tenías ahorrado (lo que nunca quedó registrado como
+// movimientos, porque pasó antes de usar la app). Desde ese momento, la
+// app sigue sumando/restando arriba de ese número con lo que pase en las
+// categorías marcadas como ahorro.
+function AdjustSavingsModal({ currentSavings, onAdjust, onClose, pushToast }) {
+  const [value, setValue] = useState(currentSavings != null ? String(Math.round(currentSavings)) : "");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    const n = parseFloat(value);
+    if (isNaN(n) || saving) return;
+    setSaving(true);
+    const ok = await onAdjust(n);
+    setSaving(false);
+    if (ok) {
+      pushToast?.("ok", "Total ahorrado ajustado correctamente.");
+      onClose();
+    } else {
+      pushToast?.("error", "No se pudo ajustar el total ahorrado. Revisa tu conexión e inténtalo de nuevo.");
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
+        alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
+      }}
+    >
+      <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16, padding: 22, maxWidth: 360, width: "100%" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div className="display" style={{ fontSize: 14.5, fontWeight: 600 }}>Ajustar total ahorrado</div>
+          <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}>
+            <X size={16} />
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: TOKENS.textMuted, marginBottom: 14, lineHeight: 1.4 }}>
+          Ingresa lo que ya tienes ahorrado ahora mismo (por ejemplo, si empezaste a ahorrar antes de usar la app). Desde este momento, la app suma o resta arriba de este número lo que pase en tus categorías de ahorro.
+        </div>
+        <FieldInput label="Total ahorrado (CLP)" type="number" value={value} onChange={setValue} placeholder="0" style={{ marginBottom: 14 }} />
+        <button
+          onClick={submit}
+          disabled={saving || value === ""}
+          style={{
+            width: "100%", padding: "10px 0", borderRadius: 8, border: "none", cursor: saving ? "default" : "pointer",
+            background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 13, opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {saving ? "Guardando…" : "Guardar total ahorrado"}
         </button>
       </div>
     </div>

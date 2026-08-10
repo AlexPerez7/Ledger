@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } fro
 
 import { TOKENS, DEFAULT_CATEGORIES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon } from "./lib/constants.js";
 import { storage } from "./lib/storage.js";
-import { getAccountSettings, saveAccountSettings } from "./lib/accountSettings.js";
+import { getAccountSettings, saveAccountSettings, saveSavingsBase } from "./lib/accountSettings.js";
 import { useToasts } from "./lib/useToasts.js";
 import { readFileWithProgress } from "./lib/readFile.js";
 import {
@@ -298,7 +298,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         } else {
           const settings = await saveAccountSettings(latestRow.saldo, fileLastSyncDate);
           if (settings && !settings.error) {
-            setAccountSettings(settings);
+            setAccountSettings((prev) => ({ ...prev, ...settings }));
             updateToast(
               toastId,
               "ok",
@@ -573,10 +573,24 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     () => new Set(categories.filter((c) => c.isSavings).map((c) => c.id)),
     [categories]
   );
+  // si el usuario declaró manualmente cuánto tenía ahorrado (ver
+  // adjustSavingsBase), ese monto es el ancla y solo se le suma/resta lo
+  // que pasó DESPUÉS de esa declaración — igual que dynamicBalance con el
+  // saldo, comparando por createdAt (cuándo se cargó el movimiento en la
+  // app) para no depender de si la fecha del movimiento cae el mismo día.
+  // Sin ancla declarada, se mantiene el cálculo histórico completo de antes.
   const totalSavings = useMemo(() => {
     if (savingsCategoryIds.size === 0) return null;
-    return transactions.filter((t) => savingsCategoryIds.has(t.category)).reduce((sum, t) => sum - t.amount, 0);
-  }, [transactions, savingsCategoryIds]);
+    const inSavings = transactions.filter((t) => savingsCategoryIds.has(t.category));
+    if (accountSettings?.savingsBase == null) {
+      return inSavings.reduce((sum, t) => sum - t.amount, 0);
+    }
+    const sinceTime = new Date(accountSettings.savingsBaseDate).getTime();
+    const netSince = inSavings
+      .filter((t) => t.createdAt && new Date(t.createdAt).getTime() > sinceTime)
+      .reduce((sum, t) => sum - t.amount, 0);
+    return accountSettings.savingsBase + netSince;
+  }, [transactions, savingsCategoryIds, accountSettings]);
 
   const stats = useMemo(() => {
     const income = monthTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
@@ -604,7 +618,16 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const adjustBaseBalance = useCallback(async (newBalance) => {
     const result = await saveAccountSettings(newBalance);
     if (result && !result.error) {
-      setAccountSettings(result);
+      setAccountSettings((prev) => ({ ...prev, ...result }));
+      return true;
+    }
+    return false;
+  }, []);
+
+  const adjustSavingsBase = useCallback(async (newSavingsBase) => {
+    const result = await saveSavingsBase(newSavingsBase);
+    if (result && !result.error) {
+      setAccountSettings((prev) => ({ ...prev, ...result }));
       return true;
     }
     return false;
@@ -789,6 +812,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 onAdjustBalance={adjustBaseBalance}
                 onCategoryClick={goToCategoryMovements}
                 totalSavings={totalSavings}
+                onAdjustSavings={adjustSavingsBase}
               />
             </Suspense>
           </ErrorBoundary>
