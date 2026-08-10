@@ -122,33 +122,43 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   }, [merchantRules]);
 
   // ---- persistence (Supabase, vía src/lib/storage.js) ----------------------
-  useEffect(() => {
-    (async () => {
-      const tx = await storage.get("transactions");
-      if (tx) setTransactions(JSON.parse(tx.value));
+  const loadAllData = useCallback(async () => {
+    const tx = await storage.get("transactions");
+    if (tx) setTransactions(JSON.parse(tx.value));
 
-      const cats = await storage.get("categories");
-      if (cats) {
-        const parsedCats = JSON.parse(cats.value);
-        // usuario nuevo, o que quedó sin categorías: sembramos las por defecto
-        if (parsedCats.length === 0) await persistCats(DEFAULT_CATEGORIES);
-        else setCategories(parsedCats);
-      }
+    const cats = await storage.get("categories");
+    if (cats) {
+      const parsedCats = JSON.parse(cats.value);
+      // usuario nuevo, o que quedó sin categorías: sembramos las por defecto
+      if (parsedCats.length === 0) await persistCats(DEFAULT_CATEGORIES);
+      else setCategories(parsedCats);
+    }
 
-      const rules = await storage.get("merchantRules");
-      if (rules) setMerchantRules(JSON.parse(rules.value));
+    const rules = await storage.get("merchantRules");
+    if (rules) setMerchantRules(JSON.parse(rules.value));
 
-      // null es un estado válido acá (usuario que nunca ajustó su saldo),
-      // así que no cuenta para el syncError de abajo.
-      setAccountSettings(await getAccountSettings());
+    // null es un estado válido acá (usuario que nunca ajustó su saldo),
+    // así que no cuenta para el syncError de abajo.
+    setAccountSettings(await getAccountSettings());
 
-      if (!tx || !cats || !rules) {
-        setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
-      }
-      setLoaded(true);
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- carga inicial: debe correr una sola vez al montar
-    })();
+    if (!tx || !cats || !rules) {
+      setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- persistCats solo se usa para sembrar defaults, no hace falta re-crear esta función si cambia
   }, []);
+
+  useEffect(() => {
+    loadAllData().then(() => setLoaded(true));
+
+    // no hay sync en vivo entre dispositivos/pestañas: los datos se cargan
+    // una vez al entrar. Si agregaste un movimiento desde el celular y
+    // volvés a una pestaña web que ya tenías abierta, se iba a quedar con
+    // los datos viejos hasta recargar la página a mano — esto la refresca
+    // sola apenas la pestaña vuelve a estar visible.
+    const onVisible = () => { if (document.visibilityState === "visible") loadAllData(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadAllData]);
 
   // ---- import xls/pdf ---------------------------------------------------------
   const handleFile = useCallback(
