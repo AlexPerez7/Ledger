@@ -200,6 +200,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         const existingKeys = new Set(transactions.filter((t) => t.source === "bank").map((t) => t.key));
         const imported = [];
+        const importedAt = new Date().toISOString();
         // fila con la fecha más reciente del archivo. Se calcula escaneando
         // dataRows (TODAS las filas crudas del Excel, sin filtrar), no el
         // array `imported` — así, si el archivo llega con movimientos que ya
@@ -249,6 +250,11 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             source: "bank",
             reconciled: false,
             matchedId: null,
+            // igual que en addManual: la columna real la pone Supabase
+            // (default now()) al guardar, esto es solo para que el orden
+            // "más reciente arriba" dentro del día ya quede bien en la lista
+            // sin esperar a un reload.
+            createdAt: importedAt,
           });
         }
 
@@ -551,7 +557,12 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     return monthTx
       .filter((t) => catFilter === "all" || t.category === catFilter)
       .filter((t) => !search || t.description.toLowerCase().includes(search.toLowerCase()) || (t.alias || "").toLowerCase().includes(search.toLowerCase()))
-      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+        // dentro del mismo día: el que se agregó/importó más recién a la
+        // app va arriba, no el orden en que vino en el archivo del banco.
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
   }, [monthTx, catFilter, search]);
 
   // categorías marcadas "no cuenta como gasto" (ej. transferencias a tus
