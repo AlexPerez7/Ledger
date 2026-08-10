@@ -203,15 +203,19 @@ function MismatchRow({ t, bankCandidates, onEdit, onMatch }) {
       </div>
 
       {mode === "edit" && (
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginTop: 8, padding: "10px 12px", background: TOKENS.surfaceAlt, borderRadius: 8 }}>
-          <FieldInput label="Fecha" type="date" value={date} onChange={setDate} style={{ flex: 1 }} />
-          <FieldInput label="Monto (CLP)" type="number" value={amount} onChange={setAmount} style={{ flex: 1 }} />
-          <button onClick={saveEdit} style={{ padding: "8px 12px", borderRadius: 7, border: "none", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-            Guardar
-          </button>
-          <button onClick={close} aria-label="Cancelar" style={{ padding: 8, borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, cursor: "pointer" }}>
-            <X size={14} />
-          </button>
+        <div style={{ marginTop: 8, padding: "10px 12px", background: TOKENS.surfaceAlt, borderRadius: 8 }}>
+          <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+            <FieldInput label="Fecha" type="date" value={date} onChange={setDate} />
+            <FieldInput label="Monto (CLP)" type="number" value={amount} onChange={setAmount} />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={saveEdit} style={{ flex: 1, padding: "8px 12px", borderRadius: 7, border: "none", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+              Guardar
+            </button>
+            <button onClick={close} aria-label="Cancelar" style={{ padding: 8, borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, cursor: "pointer" }}>
+              <X size={14} />
+            </button>
+          </div>
         </div>
       )}
 
