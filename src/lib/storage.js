@@ -57,14 +57,33 @@ const TABLES = {
   },
 };
 
+// PostgREST (la API que usa Supabase) devuelve como máximo esta cantidad de
+// filas por consulta aunque no se pida un límite explícito — sin paginar,
+// una cuenta con más de PAGE_SIZE movimientos acumulados (fácil de llegar
+// tras varios meses de cartolas) se cargaba incompleta en el cliente, sin
+// ningún error visible. Esto hacía que el chequeo de "ya existe" al
+// importar fallara para los movimientos que quedaban fuera de esa primera
+// página, y el intento de volver a insertarlos chocaba con la restricción
+// UNIQUE de la base de datos (el error real, antes oculto, era
+// "duplicate key value violates unique constraint ...").
+const PAGE_SIZE = 1000;
+
 export const storage = {
   async get(key) {
     const spec = TABLES[key];
     if (!spec) return null;
     try {
-      const { data, error } = await supabase.from(spec.table).select("*");
-      if (error) throw error;
-      return { key, value: JSON.stringify(data.map(spec.fromRow)) };
+      let rows = [];
+      let from = 0;
+      // eslint-disable-next-line no-constant-condition -- se corta abajo con el break
+      while (true) {
+        const { data, error } = await supabase.from(spec.table).select("*").range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        rows = rows.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return { key, value: JSON.stringify(rows.map(spec.fromRow)) };
     } catch (e) {
       console.error(`No se pudo leer "${key}" desde Supabase`, e);
       return null;
