@@ -75,18 +75,26 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth, onE
       </Panel>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
-        <Panel title={`Confirmados (${confirmed.length})`}>
-          {confirmed.length === 0 ? <EmptyNote text="Aún ninguno." /> : confirmed.map((t) => <ReconcileRow key={t.id} t={t} icon={Check} color={TOKENS.income} />)}
-        </Panel>
+        {/* min-width:0 en cada celda: por default una celda de grid no se
+            achica más allá del contenido de su fila (ej. una descripción
+            larga sin salto de línea), así que sin esto la columna con un
+            movimiento confirmado se ensanchaba a costa de la otra columna. */}
+        <div style={{ minWidth: 0 }}>
+          <Panel title={`Confirmados (${confirmed.length})`}>
+            {confirmed.length === 0 ? <EmptyNote text="Aún ninguno." /> : confirmed.map((t) => <ReconcileRow key={t.id} t={t} icon={Check} color={TOKENS.income} />)}
+          </Panel>
+        </div>
 
-        <Panel title={`Sin reporte del banco (${pendingNoReport.length})`}>
-          {pendingNoReport.length === 0 ? <EmptyNote text="—" /> : (
-            <>
-              <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 8 }}>Aún no importas el .xls de este mes, así que no se pueden comparar todavía.</div>
-              {pendingNoReport.map((t) => <ReconcileRow key={t.id} t={t} icon={null} color={TOKENS.textMuted} />)}
-            </>
-          )}
-        </Panel>
+        <div style={{ minWidth: 0 }}>
+          <Panel title={`Sin reporte del banco (${pendingNoReport.length})`}>
+            {pendingNoReport.length === 0 ? <EmptyNote text="—" /> : (
+              <>
+                <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 8 }}>Aún no importas el .xls de este mes, así que no se pueden comparar todavía.</div>
+                {pendingNoReport.map((t) => <ReconcileRow key={t.id} t={t} icon={null} color={TOKENS.textMuted} />)}
+              </>
+            )}
+          </Panel>
+        </div>
       </div>
 
       {bankExists && pendingMismatch.length > 0 && (
@@ -135,10 +143,10 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth, onE
 function ReconcileRow({ t, icon: Icon, color }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 0", borderBottom: `1px solid ${TOKENS.border}` }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, overflow: "hidden", flex: 1, minWidth: 0 }}>
         {Icon && <Icon size={13} color={color} style={{ flexShrink: 0 }} />}
-        <span className="mono" style={{ color: TOKENS.textFaint, fontSize: 11 }}>{formatDateDisplay(t.date)}</span>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.alias || t.description}</span>
+        <span className="mono" style={{ color: TOKENS.textFaint, fontSize: 11, flexShrink: 0 }}>{formatDateDisplay(t.date)}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{t.alias || t.description}</span>
       </div>
       <span className="mono" style={{ fontSize: 12, color: t.amount >= 0 ? TOKENS.income : TOKENS.expense, flexShrink: 0, marginLeft: 8 }}>
         {formatCLP(t.amount)}
