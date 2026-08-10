@@ -105,7 +105,7 @@ export const storage = {
       return { key, value };
     } catch (e) {
       console.error(`No se pudo guardar "${key}" en Supabase`, e);
-      return null;
+      return { key, error: e.message || String(e) };
     }
   },
 };

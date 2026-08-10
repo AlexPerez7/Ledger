@@ -84,27 +84,36 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   );
   const getCat = useCallback((id) => catMap[id] || { id, label: id, color: TOKENS.textFaint, icon: DEFAULT_CATEGORY_ICON }, [catMap]);
 
+  // detalle del último error real de Supabase (RLS, columna inexistente,
+  // sesión vencida, etc.) — un ref porque hace falta leerlo justo después de
+  // un `await persistTx(...)` puntual (ej. al importar), y el estado de
+  // React (`syncError`) no se actualiza a tiempo dentro de la misma función.
+  const lastPersistError = useRef(null);
+
   // optimista: aplica el cambio ya, pero si Supabase rechaza el guardado
   // revierte el estado local en vez de dejarlo "aplicado" solo de mentira.
   const persistTx = useCallback(async (next) => {
     const prev = transactions;
     setTransactions(next);
     const res = await storage.set("transactions", JSON.stringify(next), prev);
-    if (!res) {
+    lastPersistError.current = res?.error || null;
+    if (!res || res.error) {
       setTransactions(prev);
-      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
-    } else {
-      setSyncError(null);
+      const detail = res?.error ? ` (${res.error})` : "";
+      setSyncError(`No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.${detail}`);
+      return false;
     }
-    return !!res;
+    setSyncError(null);
+    return true;
   }, [transactions]);
   const persistCats = useCallback(async (next) => {
     const prev = categories;
     setCategories(next);
     const res = await storage.set("categories", JSON.stringify(next), prev);
-    if (!res) {
+    if (!res || res.error) {
       setCategories(prev);
-      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
+      const detail = res?.error ? ` (${res.error})` : "";
+      setSyncError(`No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.${detail}`);
     } else {
       setSyncError(null);
     }
@@ -113,9 +122,10 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const prev = merchantRules;
     setMerchantRules(next);
     const res = await storage.set("merchantRules", JSON.stringify(next), prev);
-    if (!res) {
+    if (!res || res.error) {
       setMerchantRules(prev);
-      setSyncError("No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.");
+      const detail = res?.error ? ` (${res.error})` : "";
+      setSyncError(`No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.${detail}`);
     } else {
       setSyncError(null);
     }
@@ -254,7 +264,8 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
         // conciliar — por eso ya NO se corta aquí como antes.
         const persisted = imported.length > 0 ? await persistTx([...transactions, ...imported]) : true;
         if (imported.length > 0 && !persisted) {
-          updateToast(toastId, "error", "No se pudieron guardar los movimientos importados. Intenta de nuevo.");
+          const detail = lastPersistError.current ? ` (${lastPersistError.current})` : "";
+          updateToast(toastId, "error", `No se pudieron guardar los movimientos importados. Intenta de nuevo.${detail}`);
           return;
         }
         // se reemplaza (no se acumula) con lo de esta importación puntual:
