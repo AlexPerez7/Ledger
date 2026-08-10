@@ -124,7 +124,12 @@ export const storage = {
       return { key, value };
     } catch (e) {
       console.error(`No se pudo guardar "${key}" en Supabase`, e);
-      return { key, error: e.message || String(e) };
+      // en un choque de restricción UNIQUE, Postgres manda el valor exacto
+      // que colisionó en el campo `details` (ej. "Key (user_id, key)=(...)
+      // already exists.") — sin esto solo se veía el mensaje genérico, sin
+      // ninguna pista de CUÁL fila específica ya existía.
+      const detail = [e.message, e.details].filter(Boolean).join(" — ");
+      return { key, error: detail || String(e) };
     }
   },
 };
