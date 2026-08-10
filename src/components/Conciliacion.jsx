@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
+import { motion, useAnimation } from "framer-motion";
 import { Check, AlertTriangle, ScanLine, Info, ChevronDown, ChevronUp, Pencil, Link2, X } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { formatCLP, formatDateDisplay } from "../lib/utils.js";
 import { Panel, EmptyNote, EmptyState, FieldInput } from "./Shared.jsx";
+import { useIsMobile } from "../lib/useIsMobile.js";
+
+// ancho de los 2 botones (corregir + vincular) revelados al deslizar una
+// fila de "posible descuadre" — mismo criterio que las filas de Movimientos.
+const MISMATCH_SWIPE_WIDTH = 128;
 
 const MONTH_NAMES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 function fmtMonth(m) {
@@ -14,6 +20,7 @@ function fmtMonth(m) {
 export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth, onEditManual, onManualMatch }) {
   const [result, setResult] = useState(null);
   const [showBankOnly, setShowBankOnly] = useState(false);
+  const isMobile = useIsMobile();
   const bankExists = reconcileStats?.bankExists;
 
   // conciliar es una operación segura de repetir (si no hay nada nuevo que
@@ -88,7 +95,7 @@ export function Conciliacion({ currentMonth, reconcileStats, reconcileMonth, onE
             Ya subiste el reporte de este mes, pero estos movimientos manuales no encontraron un cargo o abono equivalente. Revisa el monto, la fecha, o si el banco aún no procesa ese movimiento.
           </div>
           {pendingMismatch.map((t) => (
-            <MismatchRow key={t.id} t={t} bankCandidates={linkCandidates} onEdit={onEditManual} onMatch={onManualMatch} />
+            <MismatchRow key={t.id} t={t} bankCandidates={linkCandidates} onEdit={onEditManual} onMatch={onManualMatch} isMobile={isMobile} />
           ))}
         </Panel>
       )}
@@ -144,11 +151,13 @@ function ReconcileRow({ t, icon: Icon, color }) {
 // deja corregirlo (fecha/monto — el caso más común es un typo) o vincularlo
 // a mano con un movimiento del banco cuando el calce automático no lo
 // encontró (ej. el banco demoró más días en procesarlo de lo esperado).
-function MismatchRow({ t, bankCandidates, onEdit, onMatch }) {
+function MismatchRow({ t, bankCandidates, onEdit, onMatch, isMobile }) {
   const [mode, setMode] = useState(null); // null | "edit" | "link"
   const [date, setDate] = useState(t.date);
   const [amount, setAmount] = useState(String(Math.abs(t.amount)));
   const [bankId, setBankId] = useState("");
+  const swipeControls = useAnimation();
+  const closeSwipe = () => swipeControls.start({ x: 0, transition: { duration: 0.18 } });
 
   const close = () => setMode(null);
 
@@ -165,41 +174,86 @@ function MismatchRow({ t, bankCandidates, onEdit, onMatch }) {
     close();
   };
 
+  const openEdit = () => { closeSwipe(); setMode((m) => (m === "edit" ? null : "edit")); };
+  const openLink = () => { closeSwipe(); setMode((m) => (m === "link" ? null : "link")); };
+
+  const handleDragEnd = (_e, info) => {
+    if (info.offset.x < -MISMATCH_SWIPE_WIDTH / 2) swipeControls.start({ x: -MISMATCH_SWIPE_WIDTH, transition: { duration: 0.18 } });
+    else closeSwipe();
+  };
+
+  // el swipe-to-action (como en Movimientos) solo existe en mobile — en
+  // desktop la fila es un <div> normal y los botones de editar/vincular
+  // quedan visibles siempre (misma fila, con la clase "tx-actions" que ya
+  // se oculta en mobile vía CSS).
+  const Row = isMobile ? motion.div : "div";
+
   return (
-    <div style={{ padding: "7px 0", borderBottom: `1px solid ${TOKENS.border}` }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, overflow: "hidden", flex: 1, minWidth: 0 }}>
-          <AlertTriangle size={13} color={TOKENS.pending} style={{ flexShrink: 0 }} />
-          <span className="mono" style={{ color: TOKENS.textFaint, fontSize: 11 }}>{formatDateDisplay(t.date)}</span>
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.alias || t.description}</span>
-        </div>
-        <span className="mono" style={{ fontSize: 12, color: t.amount >= 0 ? TOKENS.income : TOKENS.expense, flexShrink: 0 }}>
-          {formatCLP(t.amount)}
-        </span>
-        <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-          <button
-            onClick={() => setMode((m) => (m === "edit" ? null : "edit"))}
-            title="Corregir fecha o monto"
-            aria-label="Corregir fecha o monto"
-            style={{ background: "none", border: "none", cursor: "pointer", color: mode === "edit" ? TOKENS.accent : TOKENS.textFaint, padding: 5 }}
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={() => setMode((m) => (m === "link" ? null : "link"))}
-            title="Vincular a mano con un movimiento del banco"
-            aria-label="Vincular a mano con un movimiento del banco"
-            disabled={bankCandidates.length === 0}
-            style={{
-              background: "none", border: "none", padding: 5,
-              cursor: bankCandidates.length === 0 ? "default" : "pointer",
-              color: mode === "link" ? TOKENS.accent : TOKENS.textFaint,
-              opacity: bankCandidates.length === 0 ? 0.4 : 1,
-            }}
-          >
-            <Link2 size={13} />
-          </button>
-        </div>
+    <div style={{ borderBottom: `1px solid ${TOKENS.border}` }}>
+      <div className="tx-swipe-clip">
+        {isMobile && (
+          <div className="tx-swipe-actions" style={{ width: MISMATCH_SWIPE_WIDTH }}>
+            <button className="tx-swipe-btn tx-swipe-edit" onClick={openEdit} aria-label="Corregir fecha o monto" title="Corregir">
+              <Pencil size={16} />
+            </button>
+            <button
+              className="tx-swipe-btn tx-swipe-link"
+              onClick={openLink}
+              aria-label="Vincular a mano con un movimiento del banco"
+              title="Vincular"
+              disabled={bankCandidates.length === 0}
+              style={bankCandidates.length === 0 ? { opacity: 0.5, cursor: "default" } : undefined}
+            >
+              <Link2 size={16} />
+            </button>
+          </div>
+        )}
+        <Row
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+            padding: "7px 0", background: TOKENS.surface, touchAction: "pan-y", position: "relative",
+          }}
+          {...(isMobile ? {
+            drag: "x",
+            dragConstraints: { left: -MISMATCH_SWIPE_WIDTH, right: 0 },
+            dragElastic: 0.06,
+            animate: swipeControls,
+            onDragEnd: handleDragEnd,
+          } : {})}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, overflow: "hidden", flex: 1, minWidth: 0 }}>
+            <AlertTriangle size={13} color={TOKENS.pending} style={{ flexShrink: 0 }} />
+            <span className="mono" style={{ color: TOKENS.textFaint, fontSize: 11 }}>{formatDateDisplay(t.date)}</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.alias || t.description}</span>
+          </div>
+          <span className="mono" style={{ fontSize: 12, color: t.amount >= 0 ? TOKENS.income : TOKENS.expense, flexShrink: 0 }}>
+            {formatCLP(t.amount)}
+          </span>
+          <div className="tx-actions" style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+            <button
+              onClick={openEdit}
+              title="Corregir fecha o monto"
+              aria-label="Corregir fecha o monto"
+              style={{ background: "none", border: "none", cursor: "pointer", color: mode === "edit" ? TOKENS.accent : TOKENS.textFaint, padding: 5 }}
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={openLink}
+              title="Vincular a mano con un movimiento del banco"
+              aria-label="Vincular a mano con un movimiento del banco"
+              disabled={bankCandidates.length === 0}
+              style={{
+                background: "none", border: "none", padding: 5,
+                cursor: bankCandidates.length === 0 ? "default" : "pointer",
+                color: mode === "link" ? TOKENS.accent : TOKENS.textFaint,
+                opacity: bankCandidates.length === 0 ? 0.4 : 1,
+              }}
+            >
+              <Link2 size={13} />
+            </button>
+          </div>
+        </Row>
       </div>
 
       {mode === "edit" && (

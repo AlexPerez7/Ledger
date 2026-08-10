@@ -12,7 +12,6 @@ import {
 
 import { Header, MonthBar, BottomNav } from "./components/Header.jsx";
 import { CategoryManager } from "./components/CategoryManager.jsx";
-import { Conciliacion } from "./components/Conciliacion.jsx";
 import { ToastStack } from "./components/Toast.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
@@ -22,6 +21,7 @@ import { AppShellSkeleton, ResumenSkeleton, MovimientosSkeleton } from "./compon
 // propios chunks para no pesar la carga inicial (que arranca en Resumen).
 const Resumen = lazy(() => import("./components/Resumen.jsx").then((m) => ({ default: m.Resumen })));
 const Movimientos = lazy(() => import("./components/Movimientos.jsx").then((m) => ({ default: m.Movimientos })));
+const Conciliacion = lazy(() => import("./components/Conciliacion.jsx").then((m) => ({ default: m.Conciliacion })));
 
 const ONBOARDING_KEY = "ledger:onboarding-done";
 
@@ -803,10 +803,12 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
         {tab === "conciliacion" && (
           <ErrorBoundary>
-            <Conciliacion
-              currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth}
-              onEditManual={editManualEntry} onManualMatch={manualMatch}
-            />
+            <Suspense fallback={<MovimientosSkeleton />}>
+              <Conciliacion
+                currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth}
+                onEditManual={editManualEntry} onManualMatch={manualMatch}
+              />
+            </Suspense>
           </ErrorBoundary>
         )}
       </main>

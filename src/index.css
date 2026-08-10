@@ -412,6 +412,10 @@ select:focus-visible {
   background: var(--color-expense);
 }
 
+.tx-swipe-link {
+  background: var(--color-pending);
+}
+
 @keyframes row-in {
   from {
     opacity: 0;
