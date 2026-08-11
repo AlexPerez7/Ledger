@@ -96,7 +96,7 @@ export function Resumen({
         </ErrorBoundary>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
+      <div className="stagger-fade" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
         <StatCard
           label="Saldo actual"
           value={dynamicBalance != null ? formatCLP(dynamicBalance) : "—"}
@@ -335,12 +335,13 @@ function AdjustBalanceModal({ currentBalance, onAdjust, onClose, pushToast }) {
 
   return (
     <div
+      className="modal-backdrop"
       style={{
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
         alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
       }}
     >
-      <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16, padding: 22, maxWidth: 360, width: "100%" }}>
+      <div className="modal-panel" style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16, padding: 22, maxWidth: 360, width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
           <div className="display" style={{ fontSize: 14.5, fontWeight: 600 }}>Ajustar saldo</div>
           <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}>
@@ -391,12 +392,13 @@ function AdjustSavingsModal({ currentSavings, onAdjust, onClose, pushToast }) {
 
   return (
     <div
+      className="modal-backdrop"
       style={{
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
         alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
       }}
     >
-      <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16, padding: 22, maxWidth: 360, width: "100%" }}>
+      <div className="modal-panel" style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16, padding: 22, maxWidth: 360, width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
           <div className="display" style={{ fontSize: 14.5, fontWeight: 600 }}>Ajustar total ahorrado</div>
           <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}>

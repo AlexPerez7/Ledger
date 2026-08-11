@@ -809,6 +809,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           />
         )}
 
+        <div key={tab} className="tab-panel">
         {tab === "categorias" && (
           <CategoryManager
             categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory}
@@ -872,6 +873,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             </Suspense>
           </ErrorBoundary>
         )}
+        </div>
       </main>
 
       <BottomNav tab={tab} setTab={setTab} onManual={openManualEntry} onImport={openImportFlow} />

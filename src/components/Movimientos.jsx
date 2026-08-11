@@ -506,11 +506,11 @@ function ImportDropzone({ onFile, disabled }) {
 
 function ImportModal({ onClose, onFile }) {
   return (
-    <div style={{
+    <div className="modal-backdrop" style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
       alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
     }}>
-      <div style={{
+      <div className="modal-panel" style={{
         background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16,
         padding: 22, maxWidth: 420, width: "100%",
       }}>
@@ -722,6 +722,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
   return (
     <div
       onClick={onClose}
+      className="modal-backdrop"
       style={{
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex",
         alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20,
@@ -729,6 +730,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="modal-panel"
         style={{
           background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 16,
           maxWidth: 440, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden",
