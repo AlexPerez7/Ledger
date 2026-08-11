@@ -760,7 +760,7 @@ function ManualForm({ categories, onClose, onSubmit, onAddCategory }) {
           ))}
         </div>
 
-        <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1 }}>
+        <div style={{ padding: "16px 20px", overflowY: "auto", flex: "1 1 auto", minHeight: 260 }}>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 10 }}>Categoría</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {relevantCategories.map((c) => {
