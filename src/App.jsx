@@ -409,7 +409,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     (label, icon, color, type) => {
       const id = "cat_" + uid();
       const resolvedColor = color || PALETTE[categories.length % PALETTE.length];
-      persistCats([...categories, { id, label, color: resolvedColor, icon: icon || "Shapes", type: ["income", "expense", "both"].includes(type) ? type : "expense", excludeFromExpense: false, budget: null }]);
+      persistCats([...categories, { id, label, color: resolvedColor, icon: icon || "Shapes", type: type === "income" ? "income" : "expense", excludeFromExpense: false, budget: null }]);
       return id;
     },
     [categories, persistCats]
@@ -418,7 +418,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const changeCategoryIcon = useCallback((id, icon) => { persistCats(categories.map((c) => (c.id === id ? { ...c, icon } : c))); }, [categories, persistCats]);
   const changeCategoryColor = useCallback((id, color) => { persistCats(categories.map((c) => (c.id === id ? { ...c, color } : c))); }, [categories, persistCats]);
   const changeCategoryType = useCallback(
-    (id, type) => { persistCats(categories.map((c) => (c.id === id ? { ...c, type: ["income", "expense", "both"].includes(type) ? type : "expense" } : c))); },
+    (id, type) => { persistCats(categories.map((c) => (c.id === id ? { ...c, type: type === "income" ? "income" : "expense" } : c))); },
     [categories, persistCats]
   );
   // budget null/0 = sin presupuesto definido para esa categoría

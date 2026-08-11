@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
-import { TOKENS, resolveCategoryIcon, categoryMatchesType, PALETTE, ICONS, ICON_NAMES, DEFAULT_CATEGORY_ICON } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon, categoryMatchesType } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
-import { EmptyState, FieldInput } from "./Shared.jsx";
+import { EmptyState, FieldInput, CategoryQuickAdd } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { useIsMobile } from "../lib/useIsMobile.js";
 import { exportBackup } from "../lib/exportBackup.js";
@@ -695,93 +695,6 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
   );
 }
 
-// panel compacto para crear una categoría sin salir del formulario de
-// movimiento manual — mismo patrón de ícono+color que CategoryManager, pero
-// reducido a lo esencial para no alargar demasiado el modal.
-function QuickAddCategory({ type, onAdd, onAddCategory, onCancel }) {
-  const [label, setLabel] = useState("");
-  const [icon, setIcon] = useState("Shapes");
-  const [color, setColor] = useState(PALETTE[0]);
-  const Icon = ICONS[icon] || DEFAULT_CATEGORY_ICON;
-
-  const submit = () => {
-    if (!label.trim()) return;
-    const id = onAddCategory(label.trim(), icon, color, type);
-    onAdd(id);
-  };
-
-  return (
-    <div style={{ marginTop: 14, padding: 12, background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <div style={{
-          width: 30, height: 30, borderRadius: 8, background: `${color}22`, display: "flex",
-          alignItems: "center", justifyContent: "center", flexShrink: 0,
-        }}>
-          <Icon size={15} color={color} />
-        </div>
-        <input
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-          placeholder={`Nueva categoría de ${type === "expense" ? "gasto" : "ingreso"}`}
-          autoFocus
-          style={{ flex: 1, minWidth: 0, padding: "6px 9px", borderRadius: 6, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}
-        />
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-        {PALETTE.map((col) => (
-          <button
-            key={col}
-            onClick={() => setColor(col)}
-            title={col}
-            aria-label={`Usar color ${col}`}
-            aria-pressed={col === color}
-            style={{
-              width: 20, height: 20, borderRadius: "50%", background: col, cursor: "pointer", padding: 0,
-              border: col === color ? `2px solid ${TOKENS.text}` : "2px solid transparent",
-            }}
-          />
-        ))}
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-        {ICON_NAMES.map((name) => {
-          const OptionIcon = ICONS[name];
-          const selected = icon === name;
-          return (
-            <button
-              key={name}
-              title={name}
-              onClick={() => setIcon(name)}
-              style={{
-                width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center",
-                background: selected ? `${color}33` : "transparent",
-                border: `1px solid ${selected ? color : TOKENS.border}`, cursor: "pointer", padding: 0,
-              }}
-            >
-              <OptionIcon size={13} color={selected ? color : TOKENS.textMuted} />
-            </button>
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          onClick={submit}
-          disabled={!label.trim()}
-          style={{
-            padding: "7px 14px", borderRadius: 7, border: "none", fontSize: 12, fontWeight: 600,
-            background: TOKENS.accent, color: TOKENS.bg, cursor: label.trim() ? "pointer" : "default", opacity: label.trim() ? 1 : 0.6,
-          }}
-        >
-          Crear y usar
-        </button>
-        <button onClick={onCancel} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12, cursor: "pointer" }}>
-          Cancelar
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function ManualForm({ categories, onClose, onSubmit, onAddCategory }) {
   const [type, setType] = useState("expense");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -899,7 +812,7 @@ function ManualForm({ categories, onClose, onSubmit, onAddCategory }) {
           </div>
 
           {addingCategory && onAddCategory && (
-            <QuickAddCategory
+            <CategoryQuickAdd
               type={type}
               onAdd={(id) => { setCategory(id); setAddingCategory(false); }}
               onAddCategory={onAddCategory}
