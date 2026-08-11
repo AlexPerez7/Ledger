@@ -410,6 +410,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       const id = "cat_" + uid();
       const resolvedColor = color || PALETTE[categories.length % PALETTE.length];
       persistCats([...categories, { id, label, color: resolvedColor, icon: icon || "Shapes", type: ["income", "expense", "both"].includes(type) ? type : "expense", excludeFromExpense: false, budget: null }]);
+      return id;
     },
     [categories, persistCats]
   );
@@ -851,6 +852,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 showManualForm={showManualForm} setShowManualForm={setShowManualForm}
                 showImportModal={showImportModal} setShowImportModal={setShowImportModal}
                 addManual={addManual}
+                onAddCategory={addCategory}
                 handleFile={handleFile}
                 isImporting={isImporting}
                 pushToast={pushToast}

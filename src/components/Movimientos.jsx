@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
-import { TOKENS, resolveCategoryIcon, categoryMatchesType } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon, categoryMatchesType, PALETTE, ICONS, ICON_NAMES, DEFAULT_CATEGORY_ICON } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
@@ -21,7 +21,7 @@ export function Movimientos({
   filteredTx, hasTransactions, categories, getCat, search, setSearch, catFilter, setCatFilter,
   txTypeFilter = "all", setTxTypeFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, showImportModal, setShowImportModal,
-  addManual, handleFile, isImporting, pushToast, onBulkDelete, onBulkChangeCategory,
+  addManual, onAddCategory, handleFile, isImporting, pushToast, onBulkDelete, onBulkChangeCategory,
   recentImportIds = [], onClearRecentImports,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
@@ -272,7 +272,7 @@ export function Movimientos({
         </div>
       )}
 
-      {showManualForm && <ManualForm categories={categories} onClose={() => setShowManualForm(false)} onSubmit={addManual} />}
+      {showManualForm && <ManualForm categories={categories} onClose={() => setShowManualForm(false)} onSubmit={addManual} onAddCategory={onAddCategory} />}
 
       {showImportModal && (
         <ImportModal onClose={() => setShowImportModal(false)} onFile={(f) => { handleFile(f); setShowImportModal(false); }} />
@@ -695,12 +695,100 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
   );
 }
 
-function ManualForm({ categories, onClose, onSubmit }) {
+// panel compacto para crear una categoría sin salir del formulario de
+// movimiento manual — mismo patrón de ícono+color que CategoryManager, pero
+// reducido a lo esencial para no alargar demasiado el modal.
+function QuickAddCategory({ type, onAdd, onAddCategory, onCancel }) {
+  const [label, setLabel] = useState("");
+  const [icon, setIcon] = useState("Shapes");
+  const [color, setColor] = useState(PALETTE[0]);
+  const Icon = ICONS[icon] || DEFAULT_CATEGORY_ICON;
+
+  const submit = () => {
+    if (!label.trim()) return;
+    const id = onAddCategory(label.trim(), icon, color, type);
+    onAdd(id);
+  };
+
+  return (
+    <div style={{ marginTop: 14, padding: 12, background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div style={{
+          width: 30, height: 30, borderRadius: 8, background: `${color}22`, display: "flex",
+          alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          <Icon size={15} color={color} />
+        </div>
+        <input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+          placeholder={`Nueva categoría de ${type === "expense" ? "gasto" : "ingreso"}`}
+          autoFocus
+          style={{ flex: 1, minWidth: 0, padding: "6px 9px", borderRadius: 6, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}
+        />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+        {PALETTE.map((col) => (
+          <button
+            key={col}
+            onClick={() => setColor(col)}
+            title={col}
+            aria-label={`Usar color ${col}`}
+            aria-pressed={col === color}
+            style={{
+              width: 20, height: 20, borderRadius: "50%", background: col, cursor: "pointer", padding: 0,
+              border: col === color ? `2px solid ${TOKENS.text}` : "2px solid transparent",
+            }}
+          />
+        ))}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+        {ICON_NAMES.map((name) => {
+          const OptionIcon = ICONS[name];
+          const selected = icon === name;
+          return (
+            <button
+              key={name}
+              title={name}
+              onClick={() => setIcon(name)}
+              style={{
+                width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center",
+                background: selected ? `${color}33` : "transparent",
+                border: `1px solid ${selected ? color : TOKENS.border}`, cursor: "pointer", padding: 0,
+              }}
+            >
+              <OptionIcon size={13} color={selected ? color : TOKENS.textMuted} />
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={submit}
+          disabled={!label.trim()}
+          style={{
+            padding: "7px 14px", borderRadius: 7, border: "none", fontSize: 12, fontWeight: 600,
+            background: TOKENS.accent, color: TOKENS.bg, cursor: label.trim() ? "pointer" : "default", opacity: label.trim() ? 1 : 0.6,
+          }}
+        >
+          Crear y usar
+        </button>
+        <button onClick={onCancel} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12, cursor: "pointer" }}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ManualForm({ categories, onClose, onSubmit, onAddCategory }) {
   const [type, setType] = useState("expense");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("otros");
+  const [addingCategory, setAddingCategory] = useState(false);
 
   // solo se ofrecen categorías del tipo elegido (gasto/ingreso), para no
   // mezclar "Comida" con "Sueldo" en la misma grilla.
@@ -710,6 +798,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
     if (!relevantCategories.some((c) => c.id === category)) {
       setCategory(relevantCategories[0]?.id || "otros");
     }
+    setAddingCategory(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
 
@@ -741,13 +830,16 @@ function ManualForm({ categories, onClose, onSubmit }) {
           <button onClick={onClose} aria-label="Cerrar" title="Cerrar" style={{ background: "none", border: "none", color: TOKENS.textFaint, cursor: "pointer" }}><X size={16} /></button>
         </div>
 
-        <div style={{ display: "flex", gap: 8, padding: "14px 20px 0", flexShrink: 0 }}>
+        <div style={{
+          display: "flex", gap: 3, padding: 3, margin: "14px 20px 0", borderRadius: 999,
+          background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, flexShrink: 0,
+        }}>
           {["expense", "income"].map((v) => (
             <button key={v} onClick={() => setType(v)} style={{
-              flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: `1px solid ${type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.border}`,
-              background: type === v ? (v === "expense" ? "var(--tint-expense)" : "var(--tint-income)") : "transparent",
-              color: type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : TOKENS.textMuted,
+              flex: 1, padding: "8px 0", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+              background: type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : "transparent",
+              color: type === v ? TOKENS.bg : TOKENS.textMuted,
+              transition: "background 150ms ease, color 150ms ease",
             }}>
               {v === "expense" ? "Gasto" : "Ingreso"}
             </button>
@@ -763,7 +855,7 @@ function ManualForm({ categories, onClose, onSubmit }) {
               return (
                 <button
                   key={c.id}
-                  onClick={() => setCategory(c.id)}
+                  onClick={() => { setCategory(c.id); setAddingCategory(false); }}
                   aria-pressed={selected}
                   title={c.label}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 2 }}
@@ -784,7 +876,36 @@ function ManualForm({ categories, onClose, onSubmit }) {
                 </button>
               );
             })}
+            {onAddCategory && (
+              <button
+                onClick={() => setAddingCategory((v) => !v)}
+                aria-pressed={addingCategory}
+                aria-expanded={addingCategory}
+                title="Crear categoría nueva"
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 2 }}
+              >
+                <div style={{
+                  width: 46, height: 46, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: addingCategory ? TOKENS.accent : "transparent",
+                  border: `1.5px dashed ${addingCategory ? TOKENS.accent : TOKENS.border}`,
+                }}>
+                  <Plus size={19} color={addingCategory ? TOKENS.bg : TOKENS.textFaint} />
+                </div>
+                <div style={{ fontSize: 10.5, color: TOKENS.textMuted, textAlign: "center", lineHeight: 1.2 }}>
+                  Nueva
+                </div>
+              </button>
+            )}
           </div>
+
+          {addingCategory && onAddCategory && (
+            <QuickAddCategory
+              type={type}
+              onAdd={(id) => { setCategory(id); setAddingCategory(false); }}
+              onAddCategory={onAddCategory}
+              onCancel={() => setAddingCategory(false)}
+            />
+          )}
         </div>
 
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${TOKENS.border}`, background: TOKENS.surfaceAlt, flexShrink: 0 }}>
