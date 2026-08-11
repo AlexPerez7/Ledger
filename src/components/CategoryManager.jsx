@@ -5,29 +5,43 @@ import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { ToggleSwitch, FieldInput, CategoryQuickAdd } from "./Shared.jsx";
 
 export function CategoryManager({ categories, onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange, onTypeChange, onSavingsToggle }) {
-  // "new-expense" / "new-income" identifican el tile "+" de cada sección;
-  // cualquier otro valor es el id de una categoría existente que se está
-  // editando — un solo picker abierto a la vez entre las dos secciones.
+  const [type, setType] = useState("expense");
+  // "new" identifica el tile "+"; cualquier otro valor es el id de una
+  // categoría existente que se está editando.
   const [pickerFor, setPickerFor] = useState(null);
 
-  const expenseCats = categories.filter((c) => categoryType(c) === "expense");
-  const incomeCats = categories.filter((c) => categoryType(c) === "income");
-
-  const sectionProps = {
-    onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange, onTypeChange, onSavingsToggle,
-    pickerFor, setPickerFor,
-  };
+  const cats = categories.filter((c) => categoryType(c) === type);
 
   return (
-    <div>
-      <CategorySection title="Categorías de gasto" type="expense" cats={expenseCats} {...sectionProps} />
-      <CategorySection title="Categorías de ingreso" type="income" cats={incomeCats} {...sectionProps} />
+    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 16 }}>
+      <div style={{
+        display: "flex", gap: 3, padding: 3, marginBottom: 16, borderRadius: 999,
+        background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`,
+      }}>
+        {["expense", "income"].map((v) => (
+          <button key={v} onClick={() => { setType(v); setPickerFor(null); }} style={{
+            flex: 1, padding: "8px 0", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+            background: type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : "transparent",
+            color: type === v ? TOKENS.bg : TOKENS.textMuted,
+            transition: "background 150ms ease, color 150ms ease",
+          }}>
+            {v === "expense" ? "Gasto" : "Ingreso"}
+          </button>
+        ))}
+      </div>
+
+      <CategorySection
+        key={type}
+        type={type} cats={cats} pickerFor={pickerFor} setPickerFor={setPickerFor}
+        onAdd={onAdd} onRename={onRename} onDelete={onDelete} onIconChange={onIconChange} onColorChange={onColorChange}
+        onToggleExpense={onToggleExpense} onBudgetChange={onBudgetChange} onTypeChange={onTypeChange} onSavingsToggle={onSavingsToggle}
+      />
     </div>
   );
 }
 
 function CategorySection({
-  title, type, cats, pickerFor, setPickerFor,
+  type, cats, pickerFor, setPickerFor,
   onAdd, onRename, onDelete, onIconChange, onColorChange, onToggleExpense, onBudgetChange, onTypeChange, onSavingsToggle,
 }) {
   const newTileId = `new-${type}`;
@@ -35,9 +49,7 @@ function CategorySection({
   const editingCat = cats.find((c) => c.id === pickerFor);
 
   return (
-    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 18, marginBottom: 16 }}>
-      <div className="display" style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 14 }}>{title}</div>
-
+    <div className="tab-panel">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: 12 }}>
         {cats.map((c) => {
           const CatIcon = resolveCategoryIcon(c);
