@@ -744,14 +744,15 @@ function ManualForm({ categories, onClose, onSubmit, onAddCategory }) {
         </div>
 
         <div style={{
-          display: "flex", gap: 3, padding: 3, margin: "14px 20px 0", borderRadius: 999,
+          display: "flex", gap: 3, padding: 3, margin: "14px 20px 0", borderRadius: 999, boxSizing: "border-box",
           background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, flexShrink: 0,
         }}>
           {["expense", "income"].map((v) => (
             <button key={v} onClick={() => setType(v)} style={{
-              flex: 1, padding: "8px 0", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+              flex: "1 1 0", minWidth: 0, padding: "8px 0", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
               background: type === v ? (v === "expense" ? TOKENS.expense : TOKENS.income) : "transparent",
               color: type === v ? TOKENS.bg : TOKENS.textMuted,
+              textAlign: "center",
               transition: "background 150ms ease, color 150ms ease",
             }}>
               {v === "expense" ? "Gasto" : "Ingreso"}
