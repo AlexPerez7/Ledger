@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON } from "../lib/constants.js";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown } from "lucide-react";
+import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon, labelWithTypeIfAmbiguous } from "../lib/constants.js";
 
 export function Skeleton({ width = "100%", height = 14, radius = 6, style }) {
   return <div className="skeleton" style={{ width, height, borderRadius: radius, background: TOKENS.surfaceAlt, ...style }} />;
@@ -248,5 +250,117 @@ export function CategoryQuickAdd({ type, onAdd, onAddCategory, onCancel }) {
         </button>
       </div>
     </div>
+  );
+}
+
+// selector de categoría con ícono y color — reemplaza a un <select> nativo,
+// que en mobile abre la lista del sistema operativo sin forma de mostrar
+// nada más que el texto. Mismo popover-en-portal que ConfirmDeleteButton,
+// para que no lo recorten los contenedores con overflow:hidden de las
+// listas de la app.
+export function CategorySelect({ categories, value, onChange, placeholder = "Elegir categoría…", disabled = false }) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const btnRef = useRef(null);
+  const popRef = useRef(null);
+
+  const openPopover = () => {
+    const rect = btnRef.current.getBoundingClientRect();
+    setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e) => {
+      if (popRef.current?.contains(e.target) || btnRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const selected = categories.find((c) => c.id === value);
+  const SelectedIcon = selected ? resolveCategoryIcon(selected) : null;
+
+  return (
+    <>
+      <button
+        type="button"
+        ref={btnRef}
+        disabled={disabled}
+        onClick={() => (open ? setOpen(false) : openPopover())}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 7, padding: "6px 9px", borderRadius: 7,
+          border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, cursor: disabled ? "default" : "pointer",
+          opacity: disabled ? 0.6 : 1, textAlign: "left",
+        }}
+      >
+        {selected ? (
+          <>
+            <span style={{
+              width: 20, height: 20, borderRadius: 6, background: `${selected.color}22`, display: "flex",
+              alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <SelectedIcon size={12} color={selected.color} />
+            </span>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12.5, color: TOKENS.text }}>
+              {labelWithTypeIfAmbiguous(selected, categories)}
+            </span>
+          </>
+        ) : (
+          <span style={{ flex: 1, fontSize: 12.5, color: TOKENS.textFaint }}>{placeholder}</span>
+        )}
+        <ChevronDown size={13} color={TOKENS.textFaint} style={{ flexShrink: 0 }} />
+      </button>
+
+      {open && coords && createPortal(
+        <div
+          ref={popRef}
+          role="listbox"
+          style={{
+            position: "fixed", top: coords.top, left: coords.left, width: Math.max(coords.width, 200), zIndex: 1000,
+            background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 10,
+            padding: 5, boxShadow: "0 10px 28px rgba(0,0,0,0.45)", maxHeight: 260, overflowY: "auto",
+          }}
+        >
+          {categories.map((c) => {
+            const Icon = resolveCategoryIcon(c);
+            const isSelected = c.id === value;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => { onChange(c.id); setOpen(false); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 7,
+                  border: "none", background: isSelected ? TOKENS.surface : "transparent", cursor: "pointer", textAlign: "left",
+                }}
+              >
+                <span style={{
+                  width: 22, height: 22, borderRadius: 6, background: `${c.color}22`, display: "flex",
+                  alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <Icon size={12.5} color={c.color} />
+                </span>
+                <span style={{ fontSize: 12.5, color: isSelected ? TOKENS.text : TOKENS.textMuted, fontWeight: isSelected ? 600 : 400 }}>
+                  {labelWithTypeIfAmbiguous(c, categories)}
+                </span>
+              </button>
+            );
+          })}
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

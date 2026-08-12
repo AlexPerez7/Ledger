@@ -3,7 +3,7 @@ import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
 import { TOKENS, resolveCategoryIcon, categoryMatchesType, labelWithTypeIfAmbiguous } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
-import { EmptyState, FieldInput, CategoryQuickAdd } from "./Shared.jsx";
+import { EmptyState, FieldInput, CategoryQuickAdd, CategorySelect } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
 import { useIsMobile } from "../lib/useIsMobile.js";
 import { exportBackup } from "../lib/exportBackup.js";
@@ -670,10 +670,12 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
       <div className="form-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 4 }}>Categoría</div>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: "100%", padding: "7px 9px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}>
-            {!currentMatchesType && <option value="" disabled>Elige la categoría correcta…</option>}
-            {relevantCategories.map((c) => <option key={c.id} value={c.id}>{labelWithTypeIfAmbiguous(c, relevantCategories)}</option>)}
-          </select>
+          <CategorySelect
+            categories={relevantCategories}
+            value={category}
+            onChange={setCategory}
+            placeholder="Elige la categoría correcta…"
+          />
         </div>
         <div>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 4 }}>Nombre para mostrar (opcional)</div>
