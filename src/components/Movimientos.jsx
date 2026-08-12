@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
-import { TOKENS, resolveCategoryIcon, categoryMatchesType, labelWithTypeIfAmbiguous } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon, categoryMatchesType } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput, CategoryQuickAdd, CategorySelect } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
@@ -204,14 +204,14 @@ export function Movimientos({
             style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 13 }}
           />
         </div>
-        <select
-          value={catFilter}
-          onChange={(e) => { setCatFilter(e.target.value); setTxTypeFilter?.("all"); }}
-          style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 13 }}
-        >
-          <option value="all">Todas las categorías</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{labelWithTypeIfAmbiguous(c, categories)}</option>)}
-        </select>
+        <div style={{ flex: "0 1 200px", minWidth: 160 }}>
+          <CategorySelect
+            categories={categories}
+            value={catFilter}
+            onChange={(v) => { setCatFilter(v); setTxTypeFilter?.("all"); }}
+            allOption={{ value: "all", label: "Todas las categorías" }}
+          />
+        </div>
         {txTypeFilter !== "all" && (
           <button
             onClick={() => setTxTypeFilter?.("all")}
@@ -368,12 +368,13 @@ export function Movimientos({
 }
 
 // Barra flotante contextual: solo existe mientras hay algo seleccionado.
-// "Cambiar categoría" es un <select> normal (sin opción propia elegible) que
-// dispara la acción apenas el usuario elige una categoría, en vez de un botón
-// + dropdown separados — menos clics, mismo resultado.
+// "Cambiar categoría" dispara la acción apenas el usuario elige una
+// categoría, en vez de un botón + dropdown separados — menos clics, mismo
+// resultado.
 function BulkActionsBar({ count, categories, onDelete, onChangeCategory, onClose }) {
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pickedCategory, setPickedCategory] = useState("");
 
   const handleDeleteClick = async () => {
     setBusy(true);
@@ -385,15 +386,14 @@ function BulkActionsBar({ count, categories, onDelete, onChangeCategory, onClose
     }
   };
 
-  const handleCategorySelect = async (e) => {
-    const categoryId = e.target.value;
+  const handleCategorySelect = async (categoryId) => {
     if (!categoryId) return;
     setBusy(true);
     try {
       await onChangeCategory(categoryId);
     } finally {
       setBusy(false);
-      e.target.value = "";
+      setPickedCategory("");
     }
   };
 
@@ -411,16 +411,15 @@ function BulkActionsBar({ count, categories, onDelete, onChangeCategory, onClose
         {count} seleccionado{count === 1 ? "" : "s"}
       </span>
 
-      <select
-        onChange={handleCategorySelect}
-        disabled={busy}
-        defaultValue=""
-        aria-label="Cambiar categoría de los movimientos seleccionados"
-        style={{ padding: "7px 9px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}
-      >
-        <option value="" disabled>Cambiar categoría…</option>
-        {categories.map((c) => <option key={c.id} value={c.id}>{labelWithTypeIfAmbiguous(c, categories)}</option>)}
-      </select>
+      <div style={{ width: 190 }}>
+        <CategorySelect
+          categories={categories}
+          value={pickedCategory}
+          onChange={(v) => { setPickedCategory(v); handleCategorySelect(v); }}
+          disabled={busy}
+          placeholder="Cambiar categoría…"
+        />
+      </div>
 
       {confirmingDelete ? (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

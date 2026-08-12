@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Tags } from "lucide-react";
 import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon, labelWithTypeIfAmbiguous } from "../lib/constants.js";
 
 export function Skeleton({ width = "100%", height = 14, radius = 6, style }) {
@@ -258,15 +258,28 @@ export function CategoryQuickAdd({ type, onAdd, onAddCategory, onCancel }) {
 // nada más que el texto. Mismo popover-en-portal que ConfirmDeleteButton,
 // para que no lo recorten los contenedores con overflow:hidden de las
 // listas de la app.
-export function CategorySelect({ categories, value, onChange, placeholder = "Elegir categoría…", disabled = false }) {
+// allOption: {value, label} opcional — una fila extra al principio (ej.
+// "Todas las categorías" en el filtro) sin ícono de categoría propio.
+export function CategorySelect({ categories, value, onChange, placeholder = "Elegir categoría…", disabled = false, allOption = null }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState(null);
   const btnRef = useRef(null);
   const popRef = useRef(null);
 
+  const POPOVER_MAX_HEIGHT = 260;
+
   const openPopover = () => {
     const rect = btnRef.current.getBoundingClientRect();
-    setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    // si no entra hacia abajo (ej. la barra de acciones flotante, anclada
+    // cerca del borde inferior) se abre hacia arriba, para que no quede
+    // recortado fuera de la pantalla.
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < POPOVER_MAX_HEIGHT && rect.top > spaceBelow;
+    setCoords(
+      openUpward
+        ? { bottom: window.innerHeight - rect.top + 4, left: rect.left, width: rect.width }
+        : { top: rect.bottom + 4, left: rect.left, width: rect.width }
+    );
     setOpen(true);
   };
 
@@ -285,6 +298,7 @@ export function CategorySelect({ categories, value, onChange, placeholder = "Ele
     };
   }, [open]);
 
+  const isAllSelected = allOption && value === allOption.value;
   const selected = categories.find((c) => c.id === value);
   const SelectedIcon = selected ? resolveCategoryIcon(selected) : null;
 
@@ -303,7 +317,19 @@ export function CategorySelect({ categories, value, onChange, placeholder = "Ele
           opacity: disabled ? 0.6 : 1, textAlign: "left",
         }}
       >
-        {selected ? (
+        {isAllSelected ? (
+          <>
+            <span style={{
+              width: 20, height: 20, borderRadius: 6, background: TOKENS.surfaceAlt, display: "flex",
+              alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <Tags size={12} color={TOKENS.textFaint} />
+            </span>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12.5, color: TOKENS.text }}>
+              {allOption.label}
+            </span>
+          </>
+        ) : selected ? (
           <>
             <span style={{
               width: 20, height: 20, borderRadius: 6, background: `${selected.color}22`, display: "flex",
@@ -326,11 +352,34 @@ export function CategorySelect({ categories, value, onChange, placeholder = "Ele
           ref={popRef}
           role="listbox"
           style={{
-            position: "fixed", top: coords.top, left: coords.left, width: Math.max(coords.width, 200), zIndex: 1000,
+            position: "fixed", left: coords.left, width: Math.max(coords.width, 200), zIndex: 1000,
+            ...(coords.top != null ? { top: coords.top } : { bottom: coords.bottom }),
             background: TOKENS.surfaceAlt, border: `1px solid ${TOKENS.border}`, borderRadius: 10,
-            padding: 5, boxShadow: "0 10px 28px rgba(0,0,0,0.45)", maxHeight: 260, overflowY: "auto",
+            padding: 5, boxShadow: "0 10px 28px rgba(0,0,0,0.45)", maxHeight: POPOVER_MAX_HEIGHT, overflowY: "auto",
           }}
         >
+          {allOption && (
+            <button
+              type="button"
+              role="option"
+              aria-selected={isAllSelected}
+              onClick={() => { onChange(allOption.value); setOpen(false); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 7,
+                border: "none", background: isAllSelected ? TOKENS.surface : "transparent", cursor: "pointer", textAlign: "left",
+              }}
+            >
+              <span style={{
+                width: 22, height: 22, borderRadius: 6, background: TOKENS.bg, display: "flex",
+                alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <Tags size={12.5} color={TOKENS.textFaint} />
+              </span>
+              <span style={{ fontSize: 12.5, color: isAllSelected ? TOKENS.text : TOKENS.textMuted, fontWeight: isAllSelected ? 600 : 400 }}>
+                {allOption.label}
+              </span>
+            </button>
+          )}
           {categories.map((c) => {
             const Icon = resolveCategoryIcon(c);
             const isSelected = c.id === value;
