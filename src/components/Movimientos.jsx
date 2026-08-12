@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
-import { TOKENS, resolveCategoryIcon, categoryMatchesType } from "../lib/constants.js";
+import { TOKENS, resolveCategoryIcon, categoryMatchesType, labelWithTypeIfAmbiguous } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput, CategoryQuickAdd } from "./Shared.jsx";
 import { ConfirmDeleteButton } from "./ConfirmDeleteButton.jsx";
@@ -210,7 +210,7 @@ export function Movimientos({
           style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 13 }}
         >
           <option value="all">Todas las categorías</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+          {categories.map((c) => <option key={c.id} value={c.id}>{labelWithTypeIfAmbiguous(c, categories)}</option>)}
         </select>
         {txTypeFilter !== "all" && (
           <button
@@ -419,7 +419,7 @@ function BulkActionsBar({ count, categories, onDelete, onChangeCategory, onClose
         style={{ padding: "7px 9px", borderRadius: 8, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}
       >
         <option value="" disabled>Cambiar categoría…</option>
-        {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+        {categories.map((c) => <option key={c.id} value={c.id}>{labelWithTypeIfAmbiguous(c, categories)}</option>)}
       </select>
 
       {confirmingDelete ? (
@@ -668,7 +668,7 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
         <div>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 4 }}>Categoría</div>
           <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: "100%", padding: "7px 9px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}>
-            {relevantCategories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            {relevantCategories.map((c) => <option key={c.id} value={c.id}>{labelWithTypeIfAmbiguous(c, relevantCategories)}</option>)}
           </select>
         </div>
         <div>

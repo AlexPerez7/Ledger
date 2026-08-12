@@ -62,6 +62,21 @@ export function categoryMatchesType(cat, wantedType) {
   return categoryType(cat) === wantedType;
 }
 
+// nombre a mostrar para una categoría en un selector que puede listar
+// categorías de los dos tipos a la vez (ej. el filtro de Movimientos, o el
+// editor de un movimiento puntual que mantiene visible su categoría actual
+// aunque no calce con el tipo del monto): dos categorías con el mismo
+// nombre pero de tipos distintos (ej. "Transporte" de gasto y "Transporte"
+// de ingreso, para poder distinguir un pasaje de una devolución) son
+// indistinguibles por nombre solo — se les agrega "(gasto)"/"(ingreso)"
+// únicamente cuando ese choque existe en la lista dada, para no ensuciar
+// el resto de las categorías que no lo necesitan.
+export function labelWithTypeIfAmbiguous(cat, allCategories) {
+  const collision = allCategories.some((c) => c.id !== cat.id && c.label === cat.label && categoryType(c) !== categoryType(cat));
+  if (!collision) return cat.label;
+  return `${cat.label} (${categoryType(cat) === "income" ? "ingreso" : "gasto"})`;
+}
+
 export const DEFAULT_CATEGORY_ICON = Shapes;
 
 // icono por id de categoría — respaldo para categorías guardadas en
