@@ -22,7 +22,7 @@ export function Movimientos({
   txTypeFilter = "all", setTxTypeFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, showImportModal, setShowImportModal,
   addManual, onAddCategory, handleFile, isImporting, pushToast, onBulkDelete, onBulkChangeCategory,
-  recentImportIds = [], onClearRecentImports,
+  recentImportIds = [], onClearRecentImports, duplicateIds,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
@@ -345,6 +345,7 @@ export function Movimientos({
                   selected={selectedIds.includes(t.id)}
                   onToggleSelect={toggleSelectOne}
                   isRecent={recentSet.has(t.id)}
+                  isDuplicate={duplicateIds?.has(t.id)}
                   isMobile={isMobile}
                 />
               ))}
@@ -526,7 +527,7 @@ function ImportModal({ onClose, onFile }) {
   );
 }
 
-function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect, isRecent, isMobile }) {
+function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect, isRecent, isDuplicate, isMobile }) {
   const [editing, setEditing] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const cat = getCat(t.category);
@@ -610,6 +611,14 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
           {isRecent && (
             <span style={{ marginLeft: 5, fontSize: 10, color: TOKENS.accent, border: `1px solid ${TOKENS.accent}`, borderRadius: 4, padding: "1px 5px", fontWeight: 600 }}>
               nuevo
+            </span>
+          )}
+          {isDuplicate && (
+            <span
+              title="Hay otro movimiento con el mismo monto y una fecha muy cercana — revisa que no sea el mismo gasto anotado dos veces (uno a mano y otro del banco, por ejemplo)."
+              style={{ marginLeft: 5, fontSize: 10, color: TOKENS.pending, border: `1px solid ${TOKENS.pending}`, borderRadius: 4, padding: "1px 5px", fontWeight: 600 }}
+            >
+              posible duplicado
             </span>
           )}
         </div>

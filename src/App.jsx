@@ -32,6 +32,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const [accountSettings, setAccountSettings] = useState(null); // { baseBalance, lastSyncDate } | null (todavía no ajustado)
   const [loaded, setLoaded] = useState(false);
   const [syncError, setSyncError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  // cuenta guardados a Supabase todavía en vuelo — se usa para (1) no dejar
+  // que el refetch automático de loadAllData (ver más abajo) pise con datos
+  // viejos un cambio que se acaba de aplicar localmente pero cuyo guardado
+  // todavía no confirma el servidor, y (2) avisar antes de cerrar/recargar
+  // la pestaña si hay algo en camino, para no perderlo.
+  const pendingSaves = useRef(0);
   const [tab, setTab] = useState("resumen");
   // ids de los movimientos agregados por la ÚLTIMA importación de banco —
   // para que el usuario pueda revisarlos sin tener que buscarlos a mano en
@@ -94,12 +101,20 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   // React (`syncError`) no se actualiza a tiempo dentro de la misma función.
   const lastPersistError = useRef(null);
 
+  const beginSave = useCallback(() => { pendingSaves.current += 1; setSaving(true); }, []);
+  const endSave = useCallback(() => {
+    pendingSaves.current = Math.max(0, pendingSaves.current - 1);
+    if (pendingSaves.current === 0) setSaving(false);
+  }, []);
+
   // optimista: aplica el cambio ya, pero si Supabase rechaza el guardado
   // revierte el estado local en vez de dejarlo "aplicado" solo de mentira.
   const persistTx = useCallback(async (next) => {
     const prev = transactions;
     setTransactions(next);
+    beginSave();
     const res = await storage.set("transactions", JSON.stringify(next), prev);
+    endSave();
     lastPersistError.current = res?.error || null;
     if (!res || res.error) {
       setTransactions(prev);
@@ -109,11 +124,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     }
     setSyncError(null);
     return true;
-  }, [transactions]);
+  }, [transactions, beginSave, endSave]);
   const persistCats = useCallback(async (next) => {
     const prev = categories;
     setCategories(next);
+    beginSave();
     const res = await storage.set("categories", JSON.stringify(next), prev);
+    endSave();
     if (!res || res.error) {
       setCategories(prev);
       const detail = res?.error ? ` (${res.error})` : "";
@@ -121,11 +138,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     } else {
       setSyncError(null);
     }
-  }, [categories]);
+  }, [categories, beginSave, endSave]);
   const persistRules = useCallback(async (next) => {
     const prev = merchantRules;
     setMerchantRules(next);
+    beginSave();
     const res = await storage.set("merchantRules", JSON.stringify(next), prev);
+    endSave();
     if (!res || res.error) {
       setMerchantRules(prev);
       const detail = res?.error ? ` (${res.error})` : "";
@@ -133,7 +152,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     } else {
       setSyncError(null);
     }
-  }, [merchantRules]);
+  }, [merchantRules, beginSave, endSave]);
 
   // ---- persistence (Supabase, vía src/lib/storage.js) ----------------------
   const loadAllData = useCallback(async () => {
@@ -168,10 +187,27 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     // una vez al entrar. Si agregaste un movimiento desde el celular y
     // volvés a una pestaña web que ya tenías abierta, se iba a quedar con
     // los datos viejos hasta recargar la página a mano — esto la refresca
-    // sola apenas la pestaña vuelve a estar visible.
-    const onVisible = () => { if (document.visibilityState === "visible") loadAllData(); };
+    // sola apenas la pestaña vuelve a estar visible. Si en ese momento hay
+    // un guardado en curso (pendingSaves > 0), se salta: si no, esta
+    // recarga podría llegar a leer la fila todavía sin el cambio recién
+    // hecho y pisar el estado local optimista con datos viejos.
+    const onVisible = () => { if (document.visibilityState === "visible" && pendingSaves.current === 0) loadAllData(); };
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+
+    // si hay un guardado en curso y el usuario cierra la pestaña o recarga
+    // antes de que termine, el navegador corta el request a mitad de
+    // camino — el cambio queda aplicado solo localmente y se pierde apenas
+    // vuelve a cargar. Este aviso nativo del navegador da la chance de
+    // cancelar y esperar a que termine.
+    const onBeforeUnload = (e) => {
+      if (pendingSaves.current > 0) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
   }, [loadAllData]);
 
   // ---- import xls/pdf ---------------------------------------------------------
@@ -571,6 +607,36 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       });
   }, [monthTx, catFilter, txTypeFilter, search]);
 
+  // posibles duplicados: mismo monto (mismo signo) y fecha a menos de 3 días
+  // de distancia, sin estar ya vinculados entre sí por la conciliación — el
+  // caso típico es anotar algo a mano y que el reporte del banco llegue con
+  // una fecha contable distinta, sin calzar dentro de la ventana que usa el
+  // matching automático de reconcileMonth. Se agrupa por monto redondeado
+  // antes de comparar fechas para no comparar todo contra todo en cuentas
+  // con muchos movimientos.
+  const duplicateIds = useMemo(() => {
+    const byAmount = new Map();
+    for (const t of transactions) {
+      const key = Math.round(Math.abs(t.amount));
+      if (!byAmount.has(key)) byAmount.set(key, []);
+      byAmount.get(key).push(t);
+    }
+    const flagged = new Set();
+    for (const group of byAmount.values()) {
+      if (group.length < 2) continue;
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const a = group[i], b = group[j];
+          if ((a.amount < 0) !== (b.amount < 0)) continue;
+          if (a.matchedId === b.id || b.matchedId === a.id) continue;
+          const dDays = Math.abs(new Date(a.date) - new Date(b.date)) / 86400000;
+          if (dDays <= 3) { flagged.add(a.id); flagged.add(b.id); }
+        }
+      }
+    }
+    return flagged;
+  }, [transactions]);
+
   // categorías marcadas "no cuenta como gasto" (ej. transferencias a tus
   // propias cuentas) — se excluyen de todo cálculo de gasto, pero siguen
   // apareciendo normalmente en la lista de movimientos.
@@ -788,7 +854,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
 
   return (
     <div style={{ background: TOKENS.bg, minHeight: "100vh", color: TOKENS.text, fontFamily: "'Inter', sans-serif" }}>
-      <Header tab={tab} setTab={setTab} onSignOut={onSignOut} theme={theme} onToggleTheme={onToggleTheme} />
+      <Header tab={tab} setTab={setTab} onSignOut={onSignOut} theme={theme} onToggleTheme={onToggleTheme} saving={saving} />
 
       <main className="app-main" style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 80px" }}>
         {syncError && (
@@ -860,6 +926,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 onBulkChangeCategory={bulkChangeCategory}
                 recentImportIds={recentImportIds}
                 onClearRecentImports={() => setRecentImportIds([])}
+                duplicateIds={duplicateIds}
               />
             </Suspense>
           </ErrorBoundary>
