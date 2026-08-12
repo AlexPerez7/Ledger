@@ -114,6 +114,7 @@ function CategorySection({
       {editingCat && (
         <div className="tab-panel">
           <CategoryEditPanel
+            key={editingCat.id}
             cat={editingCat}
             onRename={onRename} onDelete={onDelete} onIconChange={onIconChange} onColorChange={onColorChange}
             onToggleExpense={onToggleExpense} onBudgetChange={onBudgetChange} onTypeChange={onTypeChange} onSavingsToggle={onSavingsToggle}
