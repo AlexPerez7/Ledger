@@ -290,11 +290,22 @@ export function CategorySelect({ categories, value, onChange, placeholder = "Ele
       setOpen(false);
     };
     const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    // las coordenadas se calculan una sola vez al abrir (position: fixed,
+    // no sigue al botón) — si la página scrollea, el popover queda
+    // "flotando" en el lugar viejo, ya desconectado del botón que lo abrió.
+    // Se cierra apenas hay scroll fuera del propio popover (que sí puede
+    // scrollear internamente, para no perder esa interacción).
+    const onScroll = (e) => {
+      if (popRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
+    document.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("scroll", onScroll, true);
     };
   }, [open]);
 
