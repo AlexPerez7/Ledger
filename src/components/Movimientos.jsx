@@ -650,17 +650,20 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
 }
 
 function TxEditPanel({ t, categories, onSave, onCancel }) {
-  const [category, setCategory] = useState(t.category);
+  // solo se ofrecen categorías del mismo tipo que el monto (ingreso/gasto),
+  // para no mezclar "Comida" con "Sueldo" en el mismo selector — incluida
+  // la que ya tenía asignada, si esa categoría cambió de tipo después (o si
+  // el movimiento quedó mal categorizado, como un reembolso que un import
+  // automático cayó en la de gasto): en ese caso no se la mantiene como
+  // opción, se obliga a elegir una de verdad para no dejar pasar el error.
+  const txType = t.amount >= 0 ? "income" : "expense";
+  const relevantCategories = categories.filter((c) => categoryMatchesType(c, txType));
+  const currentMatchesType = relevantCategories.some((c) => c.id === t.category);
+
+  const [category, setCategory] = useState(currentMatchesType ? t.category : "");
   const [alias, setAlias] = useState(t.alias || "");
   const [remember, setRemember] = useState(t.source === "bank");
   const [matchText, setMatchText] = useState(suggestMatchKey(t.description));
-
-  // solo se ofrecen categorías del mismo tipo que el monto (ingreso/gasto),
-  // para no mezclar "Comida" con "Sueldo" en el mismo selector — salvo la
-  // que ya tenía asignada, que se mantiene visible aunque no calce, para no
-  // esconder la selección actual.
-  const txType = t.amount >= 0 ? "income" : "expense";
-  const relevantCategories = categories.filter((c) => categoryMatchesType(c, txType) || c.id === t.category);
 
   return (
     <div style={{ background: TOKENS.surfaceAlt, padding: "14px 16px", borderTop: `1px solid ${TOKENS.border}` }}>
@@ -668,6 +671,7 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
         <div>
           <div style={{ fontSize: 11, color: TOKENS.textFaint, marginBottom: 4 }}>Categoría</div>
           <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: "100%", padding: "7px 9px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }}>
+            {!currentMatchesType && <option value="" disabled>Elige la categoría correcta…</option>}
             {relevantCategories.map((c) => <option key={c.id} value={c.id}>{labelWithTypeIfAmbiguous(c, relevantCategories)}</option>)}
           </select>
         </div>
@@ -693,7 +697,14 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => onSave({ category, alias, remember, matchText })} style={{ padding: "7px 14px", borderRadius: 7, border: "none", background: TOKENS.accent, color: TOKENS.bg, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+        <button
+          onClick={() => onSave({ category, alias, remember, matchText })}
+          disabled={!category}
+          style={{
+            padding: "7px 14px", borderRadius: 7, border: "none", background: TOKENS.accent, color: TOKENS.bg,
+            fontWeight: 600, fontSize: 12, cursor: category ? "pointer" : "default", opacity: category ? 1 : 0.6,
+          }}
+        >
           Guardar
         </button>
         <button onClick={onCancel} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: "transparent", color: TOKENS.textMuted, fontSize: 12, cursor: "pointer" }}>
