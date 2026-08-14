@@ -157,7 +157,7 @@ export function BottomNav({ tab, setTab, onManual, onImport }) {
       <div className="bottom-tab-center">
         <button
           ref={btnRef}
-          className="bottom-add-btn"
+          className={`bottom-add-btn${open ? " open" : ""}`}
           aria-label="Agregar movimiento"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
