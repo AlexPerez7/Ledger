@@ -501,6 +501,34 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     [transactions, merchantRules, persistTx, persistRules]
   );
 
+  // marca/desmarca un movimiento como suscripción desde Movimientos: al
+  // marcarlo, crea (o reutiliza si ya existe una activa con el mismo
+  // nombre+monto+categoría, para no duplicar al marcar el mismo cobro dos
+  // meses distintos) una suscripción declarada con sus datos, y linkea el
+  // movimiento a ella — desde ahí aparece en la pestaña Suscripciones y
+  // genera su cargo pendiente los meses siguientes. Al desmarcarlo, solo
+  // desvincula este movimiento puntual; la suscripción en sí (y otros
+  // movimientos ya vinculados a ella) no se tocan.
+  const toggleTxSubscription = useCallback(
+    (txId, isSubscription) => {
+      const tx = transactions.find((t) => t.id === txId);
+      if (!tx) return;
+      if (!isSubscription) {
+        persistTx(transactions.map((t) => (t.id === txId ? { ...t, subscriptionId: null } : t)));
+        return;
+      }
+      const name = tx.alias || tx.description;
+      const amount = Math.abs(tx.amount);
+      const category = tx.category;
+      const dayOfMonth = Number(tx.date.slice(8, 10));
+      const existing = subscriptions.find((s) => s.active && s.name === name && s.amount === amount && s.category === category);
+      const subId = existing ? existing.id : "sub_" + uid();
+      if (!existing) persistSubs([...subscriptions, { id: subId, name, amount, category, dayOfMonth, active: true }]);
+      persistTx(transactions.map((t) => (t.id === txId ? { ...t, subscriptionId: subId } : t)));
+    },
+    [transactions, subscriptions, persistTx, persistSubs]
+  );
+
   // ---- category management ------------------------------------------------------
   const addCategory = useCallback(
     (label, icon, color, type) => {
@@ -1021,6 +1049,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 duplicateIds={duplicateIds}
                 onOpenConciliacion={() => setTab("conciliacion")}
                 reconcileStats={reconcileStats}
+                onToggleSubscription={toggleTxSubscription}
               />
             </Suspense>
           </ErrorBoundary>

@@ -22,7 +22,7 @@ export function Movimientos({
   txTypeFilter = "all", setTxTypeFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, showImportModal, setShowImportModal,
   addManual, onAddCategory, handleFile, isImporting, pushToast, onBulkDelete, onBulkChangeCategory,
-  recentImportIds = [], onClearRecentImports, duplicateIds, onOpenConciliacion, reconcileStats,
+  recentImportIds = [], onClearRecentImports, duplicateIds, onOpenConciliacion, reconcileStats, onToggleSubscription,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
@@ -360,6 +360,7 @@ export function Movimientos({
                   isRecent={recentSet.has(t.id)}
                   isDuplicate={duplicateIds?.has(t.id)}
                   isMobile={isMobile}
+                  onToggleSubscription={onToggleSubscription}
                 />
               ))}
             </div>
@@ -539,7 +540,7 @@ function ImportModal({ onClose, onFile }) {
   );
 }
 
-function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect, isRecent, isDuplicate, isMobile }) {
+function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, onToggleSelect, isRecent, isDuplicate, isMobile, onToggleSubscription }) {
   const [editing, setEditing] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const cat = getCat(t.category);
@@ -656,12 +657,20 @@ function TxRow({ t, isLast, categories, getCat, saveTxEdit, onDelete, selected, 
         </RowGrid>
       </div>
       </div>
-      {editing && <TxEditPanel t={t} categories={categories} onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }} onCancel={() => setEditing(false)} />}
+      {editing && (
+        <TxEditPanel
+          t={t}
+          categories={categories}
+          onSave={(payload) => { saveTxEdit(t.id, payload); setEditing(false); }}
+          onCancel={() => setEditing(false)}
+          onToggleSubscription={onToggleSubscription ? (checked) => onToggleSubscription(t.id, checked) : undefined}
+        />
+      )}
     </div>
   );
 }
 
-function TxEditPanel({ t, categories, onSave, onCancel }) {
+function TxEditPanel({ t, categories, onSave, onCancel, onToggleSubscription }) {
   // solo se ofrecen categorías del mismo tipo que el monto (ingreso/gasto),
   // para no mezclar "Comida" con "Sueldo" en el mismo selector — incluida
   // la que ya tenía asignada, si esa categoría cambió de tipo después (o si
@@ -694,6 +703,20 @@ function TxEditPanel({ t, categories, onSave, onCancel }) {
           <input value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="Ej: Claude" style={{ width: "100%", padding: "7px 9px", borderRadius: 7, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface, color: TOKENS.text, fontSize: 12.5 }} />
         </div>
       </div>
+
+      {t.amount < 0 && onToggleSubscription && (
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: TOKENS.textMuted, cursor: "pointer" }}>
+            <input type="checkbox" checked={!!t.subscriptionId} onChange={(e) => onToggleSubscription(e.target.checked)} />
+            ¿Es suscripción?
+          </label>
+          {t.subscriptionId && (
+            <div style={{ fontSize: 10.5, color: TOKENS.textFaint, marginTop: 3, marginLeft: 23 }}>
+              Va a aparecer en la pestaña Suscripciones y a generarse solo los meses siguientes.
+            </div>
+          )}
+        </div>
+      )}
 
       {t.source === "bank" && (
         <div style={{ marginBottom: 10 }}>
