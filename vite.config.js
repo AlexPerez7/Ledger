@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const BASE_PATH = "/expense-tracker/";
+const BASE_PATH = "/Ledger/";
 
 export default defineConfig({
   base: BASE_PATH,

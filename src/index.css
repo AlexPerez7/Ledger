@@ -13,10 +13,10 @@
   --color-income: #3fbf8f;
   --color-expense: #e8654f;
   --color-pending: #f0b94a;
-  --color-accent: #5b9bd5;
+  --color-accent: #22c7be;
 
-  --tint-accent: rgba(91, 155, 213, 0.12);
-  --tint-accent-soft: rgba(91, 155, 213, 0.06);
+  --tint-accent: rgba(34, 199, 190, 0.12);
+  --tint-accent-soft: rgba(34, 199, 190, 0.06);
   --tint-income: rgba(63, 191, 143, 0.12);
   --tint-expense: rgba(232, 101, 79, 0.12);
 
@@ -28,20 +28,20 @@
 }
 
 :root[data-theme="light"] {
-  --color-bg: #f4f6f8;
-  --color-surface: #ffffff;
-  --color-surface-alt: #eef1f4;
-  --color-border: #dde3e9;
+  --color-bg: #e7ebee;
+  --color-surface: #f8f9fb;
+  --color-surface-alt: #ebeef1;
+  --color-border: #d2d9e0;
   --color-text: #1a2430;
   --color-text-muted: #5b6672;
   --color-text-faint: #8b95a1;
   --color-income: #1f9d6f;
   --color-expense: #d9503a;
   --color-pending: #c98a1f;
-  --color-accent: #3e7fb8;
+  --color-accent: #12968e;
 
-  --tint-accent: rgba(62, 127, 184, 0.1);
-  --tint-accent-soft: rgba(62, 127, 184, 0.05);
+  --tint-accent: rgba(18, 150, 142, 0.1);
+  --tint-accent-soft: rgba(18, 150, 142, 0.05);
   --tint-income: rgba(31, 157, 111, 0.1);
   --tint-expense: rgba(217, 80, 58, 0.1);
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Wallet, Tag, ListChecks, LayoutGrid, Repeat, LogOut, Sun, Moon, Plus, PenLine, Upload, HelpCircle, Loader2, Check } from "lucide-react";
+import { Tag, ListChecks, LayoutGrid, Repeat, LogOut, Sun, Moon, Plus, PenLine, Upload, HelpCircle, Loader2, Check } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
 import { HelpModal } from "./HelpModal.jsx";
@@ -13,6 +13,22 @@ const TAB_ITEMS = [
   { id: "suscripciones", label: "Suscripciones", icon: Repeat },
   { id: "categorias", label: "Categorías", icon: Tag },
 ];
+
+// mark de la app: mismo lenguaje que el ícono real de la PWA (libro apilado
+// + flecha de tendencia) — reemplaza al ícono genérico de billetera que
+// antes vivía acá, para que el header y el ícono instalado sean la misma
+// marca.
+function LedgerMark({ size = 18, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M7 10h11" />
+      <path d="M7 15.5h8.5" />
+      <path d="M7 21h6" />
+      <path d="M13 24l6-6 4 2.5 7-9.5" />
+      <path d="M25 9.2l4.7 0.8-2.1 4.3" />
+    </svg>
+  );
+}
 
 // "Guardando…" mientras hay algo en vuelo hacia Supabase, "Guardado" un
 // instante después de terminar — para que quede claro cuándo es seguro
@@ -54,8 +70,8 @@ export function Header({ tab, setTab, onSignOut, theme, onToggleTheme, saving })
     <div style={{ borderBottom: `1px solid ${TOKENS.border}`, background: TOKENS.surface, position: "sticky", top: 0, zIndex: 10 }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 7, background: TOKENS.income, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Wallet size={16} color={TOKENS.bg} />
+          <div style={{ width: 30, height: 30, borderRadius: 7, background: `${TOKENS.accent}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LedgerMark size={17} color={TOKENS.accent} />
           </div>
           <div className="display" style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}>Ledger</div>
           <div className="header-subtitle" style={{ color: TOKENS.textFaint, fontSize: 12, marginLeft: 2 }}>· cuenta corriente CLP</div>

@@ -84,8 +84,8 @@ habla directo con Supabase.
 ### 1. Clonar e instalar
 
 ```bash
-git clone https://github.com/AlexPerez7/expense-tracker.git
-cd expense-tracker
+git clone https://github.com/AlexPerez7/Ledger.git
+cd Ledger
 npm install
 ```
 
@@ -214,5 +214,5 @@ npm run build
 ```
 
 El resultado queda en `dist/`. Como `vite.config.js` fija
-`base: "/expense-tracker/"` para servir bien en GitHub Pages, si lo alojas
+`base: "/Ledger/"` para servir bien en GitHub Pages, si lo alojas
 en un dominio propio o en la raíz de otro hosting cambia ese valor a `/`.
