@@ -3,6 +3,21 @@ import { createPortal } from "react-dom";
 import { ChevronDown, Tags } from "lucide-react";
 import { TOKENS, ICONS, ICON_NAMES, PALETTE, DEFAULT_CATEGORY_ICON, resolveCategoryIcon, labelWithTypeIfAmbiguous } from "../lib/constants.js";
 
+// mark de la app: libro apilado + flecha de tendencia, mismo lenguaje que
+// el ícono real de la PWA — usado tanto en el header como en el login para
+// que sea una sola marca reconocible en toda la app.
+export function LedgerMark({ size = 18, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M7 10h11" />
+      <path d="M7 15.5h8.5" />
+      <path d="M7 21h6" />
+      <path d="M13 24l6-6 4 2.5 7-9.5" />
+      <path d="M25 9.2l4.7 0.8-2.1 4.3" />
+    </svg>
+  );
+}
+
 export function Skeleton({ width = "100%", height = 14, radius = 6, style }) {
   return <div className="skeleton" style={{ width, height, borderRadius: radius, background: TOKENS.surfaceAlt, ...style }} />;
 }

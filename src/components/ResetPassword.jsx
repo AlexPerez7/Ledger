@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TOKENS } from "../lib/constants.js";
-import { FieldInput } from "./Shared.jsx";
+import { FieldInput, LedgerMark } from "./Shared.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 
 export function ResetPassword({ onDone }) {
@@ -29,7 +29,13 @@ export function ResetPassword({ onDone }) {
   };
 
   return (
-    <div style={{ background: TOKENS.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div style={{ background: TOKENS.bg, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 8, background: `${TOKENS.accent}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <LedgerMark size={19} color={TOKENS.accent} />
+        </div>
+        <div className="display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", color: TOKENS.text }}>Ledger</div>
+      </div>
       <form
         onSubmit={handleSubmit}
         style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 12, padding: 28, width: "100%", maxWidth: 360 }}
