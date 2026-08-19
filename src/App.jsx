@@ -12,6 +12,7 @@ import {
 
 import { Header, MonthBar, BottomNav } from "./components/Header.jsx";
 import { CategoryManager } from "./components/CategoryManager.jsx";
+import { Subscriptions } from "./components/Subscriptions.jsx";
 import { ToastStack } from "./components/Toast.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
@@ -29,6 +30,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [merchantRules, setMerchantRules] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [accountSettings, setAccountSettings] = useState(null); // { baseBalance, lastSyncDate } | null (todavía no ajustado)
   const [loaded, setLoaded] = useState(false);
   const [syncError, setSyncError] = useState(null);
@@ -153,6 +155,20 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       setSyncError(null);
     }
   }, [merchantRules, beginSave, endSave]);
+  const persistSubs = useCallback(async (next) => {
+    const prev = subscriptions;
+    setSubscriptions(next);
+    beginSave();
+    const res = await storage.set("subscriptions", JSON.stringify(next), prev);
+    endSave();
+    if (!res || res.error) {
+      setSubscriptions(prev);
+      const detail = res?.error ? ` (${res.error})` : "";
+      setSyncError(`No se pudo guardar en el servidor. Revisa tu conexión — se revirtió el cambio, inténtalo de nuevo.${detail}`);
+    } else {
+      setSyncError(null);
+    }
+  }, [subscriptions, beginSave, endSave]);
 
   // ---- persistence (Supabase, vía src/lib/storage.js) ----------------------
   const loadAllData = useCallback(async () => {
@@ -170,11 +186,14 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     const rules = await storage.get("merchantRules");
     if (rules) setMerchantRules(JSON.parse(rules.value));
 
+    const subs = await storage.get("subscriptions");
+    if (subs) setSubscriptions(JSON.parse(subs.value));
+
     // null es un estado válido acá (usuario que nunca ajustó su saldo),
     // así que no cuenta para el syncError de abajo.
     setAccountSettings(await getAccountSettings());
 
-    if (!tx || !cats || !rules) {
+    if (!tx || !cats || !rules || !subs) {
       setSyncError("No se pudieron cargar todos tus datos. Revisa tu conexión y recarga la página.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- persistCats solo se usa para sembrar defaults, no hace falta re-crear esta función si cambia
@@ -209,6 +228,48 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       window.removeEventListener("beforeunload", onBeforeUnload);
     };
   }, [loadAllData]);
+
+  // genera, una sola vez por sesión, el movimiento manual "pendiente" del mes
+  // en curso para cada suscripción activa cuyo día de cobro ya pasó — ese
+  // movimiento se concilia después con el cargo real del banco igual que
+  // cualquier otro manual (mismo reconcileMonth, mismo match por monto+fecha).
+  // No hace backfill de meses anteriores: si la app no se abrió ese mes, el
+  // cargo real que llegue del banco igual se categoriza por las reglas de
+  // comercio existentes (ver MERCHANT_RULES_DEFAULT), solo queda sin el
+  // vínculo subscriptionId.
+  const subscriptionChargesRanRef = useRef(false);
+  useEffect(() => {
+    if (!loaded || subscriptionChargesRanRef.current || subscriptions.length === 0) return;
+    subscriptionChargesRanRef.current = true;
+
+    const today = new Date();
+    const curMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+    const toGenerate = [];
+    for (const sub of subscriptions) {
+      if (!sub.active || today.getDate() < sub.dayOfMonth) continue;
+      const alreadyExists = transactions.some((t) => t.subscriptionId === sub.id && monthKey(t.date) === curMonthKey);
+      if (alreadyExists) continue;
+      const date = `${curMonthKey}-${String(Math.min(sub.dayOfMonth, daysInMonth)).padStart(2, "0")}`;
+      toGenerate.push({
+        id: uid(),
+        key: makeKey(date, sub.name, sub.amount, 0),
+        date,
+        description: sub.name,
+        alias: "",
+        amount: -Math.abs(sub.amount),
+        category: sub.category,
+        source: "manual",
+        reconciled: false,
+        matchedId: null,
+        subscriptionId: sub.id,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    if (toGenerate.length > 0) persistTx([...transactions, ...toGenerate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- corre una sola vez por sesión (ref guard); no hace falta re-crear el efecto con cada cambio de transactions/persistTx
+  }, [loaded, subscriptions]);
 
   // ---- import xls/pdf ---------------------------------------------------------
   const handleFile = useCallback(
@@ -474,8 +535,26 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
     (id) => {
       persistCats(categories.filter((c) => c.id !== id));
       persistTx(transactions.map((t) => (t.category === id ? { ...t, category: "otros" } : t)));
+      persistSubs(subscriptions.map((s) => (s.category === id ? { ...s, category: "otros" } : s)));
     },
-    [categories, transactions, persistCats, persistTx]
+    [categories, transactions, subscriptions, persistCats, persistTx, persistSubs]
+  );
+
+  // ---- subscriptions (suscripciones declaradas a mano) ------------------------
+  const addSubscription = useCallback(
+    ({ name, amount, category, dayOfMonth }) => {
+      const sub = { id: "sub_" + uid(), name, amount: Math.abs(amount), category, dayOfMonth, active: true };
+      persistSubs([...subscriptions, sub]);
+    },
+    [subscriptions, persistSubs]
+  );
+  const updateSubscription = useCallback(
+    (id, patch) => { persistSubs(subscriptions.map((s) => (s.id === id ? { ...s, ...patch } : s))); },
+    [subscriptions, persistSubs]
+  );
+  const deleteSubscription = useCallback(
+    (id) => { persistSubs(subscriptions.filter((s) => s.id !== id)); },
+    [subscriptions, persistSubs]
   );
 
   // ---- reconciliation ---------------------------------------------------------
@@ -514,7 +593,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
           return sameAmount && dDate >= -2 && dDate <= 5;
         });
         if (match) {
-          bankUpdates.set(match.id, { ...match, matchedId: m.id, category: m.category, alias: m.alias || match.alias });
+          bankUpdates.set(match.id, { ...match, matchedId: m.id, category: m.category, alias: m.alias || match.alias, subscriptionId: m.subscriptionId ?? match.subscriptionId });
           mergedManualIds.add(m.id);
         }
       }
@@ -564,7 +643,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       if (!manual) return;
       const next = transactions
         .filter((t) => t.id !== manualId)
-        .map((t) => (t.id === bankId ? { ...t, matchedId: manualId, category: manual.category, alias: manual.alias || t.alias } : t));
+        .map((t) => (t.id === bankId ? { ...t, matchedId: manualId, category: manual.category, alias: manual.alias || t.alias, subscriptionId: manual.subscriptionId ?? t.subscriptionId } : t));
       persistTx(next);
     },
     [transactions, persistTx]
@@ -607,11 +686,16 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       });
   }, [monthTx, catFilter, txTypeFilter, search]);
 
-  // posibles duplicados: mismo monto (mismo signo) y fecha a menos de 3 días
-  // de distancia, sin estar ya vinculados entre sí por la conciliación — el
+  // posibles duplicados: un manual y un bancario (nunca dos del mismo
+  // origen) con mismo monto (mismo signo) y fecha a menos de 3 días de
+  // distancia, sin estar ya vinculados entre sí por la conciliación — el
   // caso típico es anotar algo a mano y que el reporte del banco llegue con
   // una fecha contable distinta, sin calzar dentro de la ventana que usa el
-  // matching automático de reconcileMonth. Se agrupa por monto redondeado
+  // matching automático de reconcileMonth. Comparar bancario contra
+  // bancario NO sirve acá: servicios con tarifa fija (metro, estacionamiento)
+  // generan varios movimientos legítimos con el mismo monto en pocos días, y
+  // los duplicados reales de una reimportación ya se filtran aparte por la
+  // clave única al importar (ver handleFile). Se agrupa por monto redondeado
   // antes de comparar fechas para no comparar todo contra todo en cuentas
   // con muchos movimientos.
   const duplicateIds = useMemo(() => {
@@ -627,6 +711,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
       for (let i = 0; i < group.length; i++) {
         for (let j = i + 1; j < group.length; j++) {
           const a = group[i], b = group[j];
+          if (a.source === b.source) continue;
           if ((a.amount < 0) !== (b.amount < 0)) continue;
           if (a.matchedId === b.id || b.matchedId === a.id) continue;
           const dDays = Math.abs(new Date(a.date) - new Date(b.date)) / 86400000;
@@ -869,7 +954,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             </button>
           </div>
         )}
-        {tab !== "categorias" && (
+        {tab !== "categorias" && tab !== "suscripciones" && (
           <MonthBar
             months={months} monthFilter={monthFilter} setMonthFilter={setMonthFilter}
             monthHealth={tab === "conciliacion" ? monthHealth : undefined}
@@ -882,6 +967,13 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
             categories={categories} onAdd={addCategory} onRename={renameCategory} onDelete={deleteCategory}
             onIconChange={changeCategoryIcon} onColorChange={changeCategoryColor} onToggleExpense={toggleCategoryExpense}
             onBudgetChange={changeCategoryBudget} onTypeChange={changeCategoryType} onSavingsToggle={toggleCategorySavings}
+          />
+        )}
+
+        {tab === "suscripciones" && (
+          <Subscriptions
+            subscriptions={subscriptions} categories={categories}
+            onAdd={addSubscription} onUpdate={updateSubscription} onDelete={deleteSubscription}
           />
         )}
 
@@ -927,6 +1019,8 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
                 recentImportIds={recentImportIds}
                 onClearRecentImports={() => setRecentImportIds([])}
                 duplicateIds={duplicateIds}
+                onOpenConciliacion={() => setTab("conciliacion")}
+                reconcileStats={reconcileStats}
               />
             </Suspense>
           </ErrorBoundary>
@@ -938,6 +1032,7 @@ export default function App({ onSignOut, theme, onToggleTheme }) {
               <Conciliacion
                 currentMonth={currentMonth} reconcileStats={reconcileStats} reconcileMonth={reconcileMonth}
                 onEditManual={editManualEntry} onManualMatch={manualMatch}
+                onBack={() => setTab("movimientos")}
               />
             </Suspense>
           </ErrorBoundary>

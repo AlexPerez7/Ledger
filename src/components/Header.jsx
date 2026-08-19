@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Wallet, Tag, ListChecks, LayoutGrid, ScanLine, LogOut, Sun, Moon, Plus, PenLine, Upload, HelpCircle, Loader2, Check } from "lucide-react";
+import { Wallet, Tag, ListChecks, LayoutGrid, Repeat, LogOut, Sun, Moon, Plus, PenLine, Upload, HelpCircle, Loader2, Check } from "lucide-react";
 import { TOKENS } from "../lib/constants.js";
 import { pillStyle } from "./Shared.jsx";
 import { HelpModal } from "./HelpModal.jsx";
 
+// Conciliación no tiene tab propia en la nav — se llega a ella desde un
+// botón dentro de Movimientos (setTab("conciliacion") sigue siendo un valor
+// válido de `tab`, solo no aparece acá).
 const TAB_ITEMS = [
   { id: "resumen", label: "Resumen", icon: LayoutGrid },
   { id: "movimientos", label: "Movimientos", icon: ListChecks },
-  { id: "conciliacion", label: "Conciliación", icon: ScanLine },
+  { id: "suscripciones", label: "Suscripciones", icon: Repeat },
   { id: "categorias", label: "Categorías", icon: Tag },
 ];
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
-import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft } from "lucide-react";
+import { Upload, Plus, Pencil, X, Inbox, SearchX, CalendarX2, Download, FileSpreadsheet, Loader2, Trash2, Sparkles, ChevronLeft, ScanLine } from "lucide-react";
 import { TOKENS, resolveCategoryIcon, categoryMatchesType } from "../lib/constants.js";
 import { formatCLP, suggestMatchKey, groupByDate, formatDayHeading } from "../lib/utils.js";
 import { EmptyState, FieldInput, CategoryQuickAdd, CategorySelect } from "./Shared.jsx";
@@ -22,7 +22,7 @@ export function Movimientos({
   txTypeFilter = "all", setTxTypeFilter,
   saveTxEdit, deleteTransaction, showManualForm, setShowManualForm, showImportModal, setShowImportModal,
   addManual, onAddCategory, handleFile, isImporting, pushToast, onBulkDelete, onBulkChangeCategory,
-  recentImportIds = [], onClearRecentImports, duplicateIds,
+  recentImportIds = [], onClearRecentImports, duplicateIds, onOpenConciliacion, reconcileStats,
 }) {
   const [exportingBackup, setExportingBackup] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
@@ -239,6 +239,19 @@ export function Movimientos({
             <button onClick={() => setShowManualForm((v) => !v)} className="new-record-btn" style={actionBtnStyle} title="Agregar un gasto o ingreso manual">
               <Plus size={13} /> Nuevo registro
             </button>
+            {onOpenConciliacion && (
+              <button onClick={onOpenConciliacion} style={actionBtnStyle} title="Revisar y conciliar movimientos manuales contra el reporte del banco">
+                <ScanLine size={13} /> Conciliación
+                {reconcileStats?.manuals?.length > 0 && (
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 16, height: 16, padding: "0 4px",
+                    borderRadius: 999, background: TOKENS.pending, color: TOKENS.bg, fontSize: 10, fontWeight: 700,
+                  }}>
+                    {reconcileStats.manuals.length}
+                  </span>
+                )}
+              </button>
+            )}
           </>
         )}
       </div>
